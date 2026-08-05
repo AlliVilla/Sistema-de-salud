@@ -1,0 +1,101 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+@import 'tailwindcss';
+
+:root {
+  --bg-base: #0A1618;
+  --surface-1: #101F22;
+  --surface-2: #17282C;
+  --border: #283E42;
+  --text-primary: #EAF2F1;
+  --text-muted: #7FA09C;
+  --accent-hr: #FF6B6B;
+  --accent-teal: #2DD4BF;
+  --accent-amber: #FFB454;
+  --accent-violet: #A78BFA;
+  --accent-green: #34D399;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body, #root {
+  height: 100%;
+  width: 100%;
+}
+
+body {
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+  font-family: 'Inter', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.font-display {
+  font-family: 'Space Grotesk', sans-serif;
+}
+
+.font-mono {
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+/* Hide scrollbars */
+::-webkit-scrollbar { width: 0; height: 0; }
+* { scrollbar-width: none; }
+
+/* ECG pulse line animation */
+@keyframes ecg-scroll {
+  0% { stroke-dashoffset: 0; }
+  100% { stroke-dashoffset: -400; }
+}
+
+.ecg-line {
+  animation: ecg-scroll 3s linear infinite;
+}
+
+/* Pulsing ring animation */
+@keyframes pulse-ring {
+  0% { transform: scale(0.8); opacity: 1; }
+  70% { transform: scale(1.6); opacity: 0; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+
+.pulse-ring {
+  animation: pulse-ring 1.8s ease-out infinite;
+}
+
+@keyframes pulse-ring-2 {
+  0% { transform: scale(0.8); opacity: 0.8; }
+  70% { transform: scale(2.2); opacity: 0; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+
+.pulse-ring-2 {
+  animation: pulse-ring-2 1.8s ease-out 0.4s infinite;
+}
+
+/* Blink for alert badge */
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.blink {
+  animation: blink 1.4s ease-in-out infinite;
+}
+
+/* Heartbeat number pulse */
+@keyframes heartbeat {
+  0%, 100% { transform: scale(1); }
+  15% { transform: scale(1.04); }
+  30% { transform: scale(1); }
+}
+
+.heartbeat {
+  animation: heartbeat 1.2s ease-in-out infinite;
+}

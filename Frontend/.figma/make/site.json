@@ -1,0 +1,10 @@
+{
+  "description": "Monitors chronic patients' vital signs with wearable integration, AI alerts, and secure blockchain history for reliable health tracking and timely medical support.",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false,
+    "ignoreReducedMotion": false
+  }
+}
