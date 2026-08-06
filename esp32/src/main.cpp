@@ -40,7 +40,7 @@ void loop() {
   if (tempC == DEVICE_DISCONNECTED_C) {
     Serial.println("Error: sensor no detectado (-127)");
   } else {
-    String payload = String(tempC, 2); // ej. "23.50"
+    String payload = String(tempC, 2);
 
     udp.beginPacket(targetIP, targetPort);
     udp.print(payload);
