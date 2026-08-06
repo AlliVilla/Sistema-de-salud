@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Temperatura ESP32</title>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      text-align: center;
+      margin-top: 60px;
+      background: #111827;
+      color: #e5e7eb;
+    }
+    #temp {
+      font-size: 6rem;
+      font-weight: bold;
+      color: #4fd1c5;
+    }
+    #hora {
+      color: #9ca3af;
+      margin-top: 10px;
+    }
+    table {
+      margin: 40px auto 0;
+      border-collapse: collapse;
+      width: 320px;
+    }
+    th, td {
+      padding: 6px 12px;
+      border-bottom: 1px solid #374151;
+    }
+    th {
+      color: #9ca3af;
+      font-weight: normal;
+      text-align: left;
+    }
+    td {
+      text-align: left;
+    }
+  </style>
+</head>
+<body>
+  <h1>Temperatura del sensor</h1>
+  <div id="temp">--</div>
+  <div id="hora">Esperando datos...</div>
+
+  <table>
+    <thead>
+      <tr><th>Hora</th><th>Temp (°C)</th></tr>
+    </thead>
+    <tbody id="tabla-body"></tbody>
+  </table>
+
+  <script>
+    async function actualizar() {
+      try {
+        const res = await fetch('/data');
+        const data = await res.json();
+
+        if (data.ultima.temp !== null) {
+          document.getElementById('temp').textContent = data.ultima.temp.toFixed(2) + ' °C';
+          document.getElementById('hora').textContent =
+            'Última lectura: ' + new Date(data.ultima.timestamp).toLocaleTimeString();
+        }
+
+        const tbody = document.getElementById('tabla-body');
+        tbody.innerHTML = data.historial.map(l => `
+          <tr>
+            <td>${new Date(l.timestamp).toLocaleTimeString()}</td>
+            <td>${l.temp.toFixed(2)}</td>
+          </tr>
+        `).join('');
+      } catch (e) {
+        console.error('Error al obtener datos', e);
+      }
+    }
+    actualizar();
+    setInterval(actualizar, 2000);
+  </script>
+</body>
+</html>
