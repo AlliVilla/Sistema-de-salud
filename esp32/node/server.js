@@ -3,13 +3,12 @@ const dgram = require('dgram');
 const fs = require('fs');
 const path = require('path');
 
-const UDP_PORT = 4210;  // debe coincidir con targetPort en el ESP32
+const UDP_PORT = 4210; 
 const HTTP_PORT = 3000;
 const MAX_HISTORIAL = 30;
 
-let historial = []; // { temp, timestamp }, más antiguo primero
+let historial = []; 
 
-// --- Servidor UDP: recibe los datos del ESP32 ---
 const udpServer = dgram.createSocket('udp4');
 
 udpServer.on('message', (msg, rinfo) => {
@@ -31,7 +30,7 @@ udpServer.bind(UDP_PORT, () => {
   console.log(`Escuchando datos UDP en el puerto ${UDP_PORT}`);
 });
 
-// --- Servidor HTTP: sirve la página y expone /data ---
+
 const httpServer = http.createServer((req, res) => {
   if (req.url === '/data') {
     const ultima = historial[historial.length - 1] || { temp: null, timestamp: null };
