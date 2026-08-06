@@ -99,3 +99,31 @@ body {
 .heartbeat {
   animation: heartbeat 1.2s ease-in-out infinite;
 }
+
+/* Desktop-only centered column: parent must be width 100% (see AppLayout). */
+@media (min-width: 768px) {
+  :root {
+    --desktop-nav-height: 5.75rem;
+  }
+
+  .app-desktop-center {
+    width: 100%;
+    max-width: 56rem;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .app-desktop-nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 50;
+    border-top: 1px solid var(--border);
+    background-color: var(--bg-base);
+  }
+
+  .app-main-with-nav {
+    padding-bottom: var(--desktop-nav-height);
+  }
+}
