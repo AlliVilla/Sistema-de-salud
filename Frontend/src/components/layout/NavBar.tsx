@@ -6,8 +6,6 @@ import type { ScreenId } from '../../types'
 
 interface NavBarProps {
   currentScreen: ScreenId
-  /** desktop = barra superior (md+), mobile = barra inferior (menor a md) */
-  variant: 'desktop' | 'mobile'
 }
 
 function renderIcon(key: string, size: number): ReactNode {
@@ -41,34 +39,30 @@ function renderIcon(key: string, size: number): ReactNode {
 
 const NAV_KEYS = ['home', 'alert', 'hist', 'user']
 
-export default function NavBar({ currentScreen, variant }: NavBarProps) {
-  const isDesktop = variant === 'desktop'
-
-  const navClass = isDesktop
-    ? 'hidden md:flex flex-1 items-center justify-center gap-1'
-    : 'flex md:hidden items-stretch justify-between border-t border-[var(--border)] bg-[var(--bg-base)] px-1'
-
+export default function NavBar({ currentScreen }: NavBarProps) {
   return (
-    <nav className={navClass} aria-label="Navegación principal">
+    <nav
+      className="flex items-stretch justify-between border-t border-[var(--border)] bg-[var(--bg-base)] px-1 md:hidden"
+      aria-label="Navegación principal"
+    >
       {NAV_ITEMS.map((item, i) => {
         const isActive = currentScreen === item.screen
-        const color = isActive ? 'text-[var(--accent-teal)]' : 'text-[var(--text-muted)]'
-        const iconSize = isDesktop ? 18 : 24
-
-        const buttonClass = isDesktop
-          ? `flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${color} ${isActive ? 'bg-[var(--surface-1)] border border-[var(--border)]' : 'hover:text-[var(--text-primary)]'
-          }`
-          : `flex flex-1 flex-col items-center justify-center gap-1.5 py-3 min-h-[64px] ${color}`
-
         return (
           <NavLink
             key={item.screen}
             to={ROUTES[item.screen]}
             aria-current={isActive ? 'page' : undefined}
-            className={buttonClass}
+            className={`flex flex-1 flex-col items-center justify-center gap-1.5 py-3 min-h-[64px] ${isActive ? 'text-[var(--accent-teal)]' : 'text-[var(--text-muted)]'
+            }`}
           >
-            {renderIcon(NAV_KEYS[i], iconSize)}
-            <span style={{ fontSize: isDesktop ? 14 : 11, fontFamily: "'Inter', sans-serif", fontWeight: isActive ? 600 : 400 }}>
+            {renderIcon(NAV_KEYS[i], 24)}
+            <span
+              style={{
+                fontSize: 11,
+                fontFamily: "'Inter', sans-serif",
+                fontWeight: isActive ? 600 : 500,
+              }}
+            >
               {item.label}
             </span>
           </NavLink>
