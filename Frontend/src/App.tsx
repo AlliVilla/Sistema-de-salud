@@ -19,7 +19,7 @@ export default function App() {
           <Route path="/registro" element={<RegistroPaciente />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/alertas" element={<Alertas />} />
-          <Route path="/blockchain" element={<Blockchain />} />
+          <Route path="/historial" element={<Blockchain />} />
           <Route path="/perfil" element={<Perfil />} />
         </Route>
       </Routes>

@@ -3,7 +3,7 @@ import type { NavItem, ScreenId } from '../types'
 export const NAV_ITEMS: NavItem[] = [
   { label: 'Inicio', screen: 'dashboard' },
   { label: 'Alertas', screen: 'alertas' },
-  { label: 'Historial', screen: 'blockchain' },
+  { label: 'Historial', screen: 'historial' },
   { label: 'Perfil', screen: 'perfil' },
 ]
 

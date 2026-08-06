@@ -2,7 +2,7 @@ import EcgLine from '../components/charts/EcgLine'
 import { mockBlockchainEntries } from '../lib/mock'
 import { theme } from '../theme'
 
-export default function Blockchain() {
+export default function Historial() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <EcgLine color={theme.colors.violet} />

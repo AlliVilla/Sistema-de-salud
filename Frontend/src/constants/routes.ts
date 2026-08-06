@@ -6,7 +6,7 @@ export const ROUTES: Record<ScreenId, string> = {
   registro: '/registro',
   dashboard: '/dashboard',
   alertas: '/alertas',
-  blockchain: '/blockchain',
+  historial: '/historial',
   perfil: '/perfil',
 }
 
