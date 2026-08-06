@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import AppLayout from './components/layout/AppLayout'
 import VincularDispositivo from './pages/onboarding/VincularDispositivo'
 import Login from './pages/onboarding/Login'
@@ -7,26 +7,22 @@ import Dashboard from './pages/Dashboard'
 import Alertas from './pages/Alertas'
 import Blockchain from './pages/Blockchain'
 import Perfil from './pages/Perfil'
-import type { ScreenId } from './types'
 
-// Screen flow:
-//   vincular → login → (dashboard si tiene cuenta | registro si no)
-//   registro → dashboard
-//   dashboard / alertas / blockchain / perfil ↔ navegable via el layout (NavBar)
 export default function App() {
-  const [screen, setScreen] = useState<ScreenId>('vincular')
-
   return (
-    <AppLayout currentScreen={screen} onNavigate={setScreen}>
-      {screen === 'vincular' && <VincularDispositivo onNext={() => setScreen('login')} />}
-      {screen === 'login' && (
-        <Login onLogin={() => setScreen('dashboard')} onCreateAccount={() => setScreen('registro')} />
-      )}
-      {screen === 'registro' && <RegistroPaciente onNext={() => setScreen('dashboard')} />}
-      {screen === 'dashboard' && <Dashboard />}
-      {screen === 'alertas' && <Alertas />}
-      {screen === 'blockchain' && <Blockchain />}
-      {screen === 'perfil' && <Perfil />}
-    </AppLayout>
+    <BrowserRouter>
+      <Routes>
+        <Route element={<AppLayout />}>
+          <Route path="/" element={<Navigate to="/vincular" replace />} />
+          <Route path="/vincular" element={<VincularDispositivo />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/registro" element={<RegistroPaciente />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/alertas" element={<Alertas />} />
+          <Route path="/blockchain" element={<Blockchain />} />
+          <Route path="/perfil" element={<Perfil />} />
+        </Route>
+      </Routes>
+    </BrowserRouter>
   )
 }

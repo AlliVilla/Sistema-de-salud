@@ -1,20 +1,18 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import EcgLine from '../../components/charts/EcgLine'
 import { PATIENT } from '../../constants/navigation'
 import { theme } from '../../theme'
 
-interface VincularDispositivoProps {
-  onNext: () => void
-}
-
-export default function VincularDispositivo({ onNext }: VincularDispositivoProps) {
+export default function VincularDispositivo() {
+  const navigate = useNavigate()
   const [connecting, setConnecting] = useState(false)
 
   const handleConnect = () => {
     setConnecting(true)
     setTimeout(() => {
       setConnecting(false)
-      onNext()
+      navigate('/login')
     }, 1800)
   }
 

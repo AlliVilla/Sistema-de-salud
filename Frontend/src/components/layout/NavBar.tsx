@@ -1,10 +1,11 @@
 import type { ReactNode } from 'react'
+import { NavLink } from 'react-router-dom'
 import { NAV_ITEMS } from '../../constants/navigation'
+import { ROUTES } from '../../constants/routes'
 import type { ScreenId } from '../../types'
 
 interface NavBarProps {
   currentScreen: ScreenId
-  onNavigate: (screen: ScreenId) => void
   /** desktop = barra superior (md+), mobile = barra inferior (menor a md) */
   variant: 'desktop' | 'mobile'
 }
@@ -40,7 +41,7 @@ function renderIcon(key: string, size: number): ReactNode {
 
 const NAV_KEYS = ['home', 'alert', 'hist', 'user']
 
-export default function NavBar({ currentScreen, onNavigate, variant }: NavBarProps) {
+export default function NavBar({ currentScreen, variant }: NavBarProps) {
   const isDesktop = variant === 'desktop'
 
   const navClass = isDesktop
@@ -60,10 +61,9 @@ export default function NavBar({ currentScreen, onNavigate, variant }: NavBarPro
           : `flex flex-1 flex-col items-center justify-center gap-1.5 py-3 min-h-[64px] ${color}`
 
         return (
-          <button
+          <NavLink
             key={item.screen}
-            type="button"
-            onClick={() => onNavigate(item.screen)}
+            to={ROUTES[item.screen]}
             aria-current={isActive ? 'page' : undefined}
             className={buttonClass}
           >
@@ -71,7 +71,7 @@ export default function NavBar({ currentScreen, onNavigate, variant }: NavBarPro
             <span style={{ fontSize: isDesktop ? 14 : 11, fontFamily: "'Inter', sans-serif", fontWeight: isActive ? 600 : 400 }}>
               {item.label}
             </span>
-          </button>
+          </NavLink>
         )
       })}
     </nav>
