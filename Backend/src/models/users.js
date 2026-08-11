@@ -14,7 +14,7 @@ const users = new mongoose.Schema({
         required: [true, 'La contraseña es requerida.'],
         trim: true
     },
-    nombre_completo: {
+    name: {
         type: String,
         required: [true, 'El nombre completo es requerido.'],
         trim: true
@@ -31,12 +31,12 @@ const users = new mongoose.Schema({
         trim: true,
         match: [/^\d{8}$/, "Debe contener exactamente 8 dígitos"]
     },
-    direccion: {
+    address: {
         type: String,
         required: [true, 'El dirección  es requerida.'],
         trim: true
     },
-    estado: {
+    status: {
         type: Boolean,
         default: true
     },
