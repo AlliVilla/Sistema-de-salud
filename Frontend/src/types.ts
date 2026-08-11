@@ -4,7 +4,7 @@ export type ScreenId =
   | 'registro'
   | 'dashboard'
   | 'alertas'
-  | 'blockchain'
+  | 'historial'
   | 'perfil'
 
 export interface NavItem {

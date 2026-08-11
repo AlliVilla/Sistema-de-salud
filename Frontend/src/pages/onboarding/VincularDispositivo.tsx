@@ -1,10 +1,10 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import EcgLine from '../../components/charts/EcgLine'
 import { theme } from '../../theme'
 import type { BluetoothState, BleDevice } from '../../lib/bluetooth'
 
 interface VincularDispositivoProps {
-  onNext: () => void
   btState: BluetoothState
   knownDevices: BleDevice[]
   connectedName: string | null
@@ -20,7 +20,8 @@ const stateLabel: Record<BluetoothState, string> = {
   error: 'Error',
 }
 
-export default function VincularDispositivo({ onNext, btState, knownDevices, connectedName, scanNewDevice, connectToDevice }: VincularDispositivoProps) {
+export default function VincularDispositivo({ btState, knownDevices, connectedName, scanNewDevice, connectToDevice }: VincularDispositivoProps) {
+  const navigate = useNavigate()
   const [scanning, setScanning] = useState(false)
   const [connectingId, setConnectingId] = useState<string | null>(null)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
@@ -42,7 +43,7 @@ export default function VincularDispositivo({ onNext, btState, knownDevices, con
     const ok = await connectToDevice(device)
     setConnectingId(null)
     if (ok) {
-      setTimeout(() => onNext(), 800)
+      setTimeout(() => navigate('/login'), 800)
     } else {
       setErrorMsg('No se pudo conectar al dispositivo. Intenta de nuevo.')
     }
@@ -85,7 +86,6 @@ export default function VincularDispositivo({ onNext, btState, knownDevices, con
           </p>
         </div>
 
-        {/* State indicator */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginBottom: 20 }}>
           <div
             style={{
@@ -101,14 +101,12 @@ export default function VincularDispositivo({ onNext, btState, knownDevices, con
           </span>
         </div>
 
-        {/* Error message */}
         {errorMsg && (
           <div style={{ background: 'rgba(255,107,107,0.08)', border: '1px solid rgba(255,107,107,0.2)', borderRadius: 10, padding: '10px 14px', marginBottom: 16 }}>
             <span style={{ fontSize: 12, color: theme.colors.danger }}>{errorMsg}</span>
           </div>
         )}
 
-        {/* Device list */}
         {knownDevices.length > 0 && (
           <div style={{ marginBottom: 16 }}>
             <p style={{ fontSize: 11, color: theme.colors.muted, textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 500, marginBottom: 8 }}>
@@ -194,7 +192,6 @@ export default function VincularDispositivo({ onNext, btState, knownDevices, con
           </div>
         )}
 
-        {/* Empty state */}
         {knownDevices.length === 0 && !isConnecting && (
           <div style={{ border: '1.5px dashed rgba(45,212,191,0.25)', borderRadius: 14, background: '#101F22', padding: '28px 20px', textAlign: 'center', marginBottom: 16 }}>
             <svg width="40" height="40" viewBox="0 0 40 40" fill="none" style={{ margin: '0 auto 12px' }}>

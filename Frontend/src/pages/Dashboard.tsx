@@ -1,7 +1,6 @@
 import EcgLine from '../components/charts/EcgLine'
 import TempTrendChart from '../components/charts/TempTrendChart'
-import { PATIENT } from '../constants/navigation'
-import { mockVitals } from '../lib/mock'
+import { PATIENT, mockVitals } from '../lib/mock'
 import { theme } from '../theme'
 import type { BleReading } from '../lib/bluetooth'
 

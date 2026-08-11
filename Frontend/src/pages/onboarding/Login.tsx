@@ -1,13 +1,10 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import EcgLine from '../../components/charts/EcgLine'
 import { theme } from '../../theme'
 
-interface LoginProps {
-  onLogin: () => void
-  onCreateAccount: () => void
-}
-
-export default function Login({ onLogin, onCreateAccount }: LoginProps) {
+export default function Login() {
+  const navigate = useNavigate()
   const [correo, setCorreo] = useState('')
   const [contrasena, setContrasena] = useState('')
   const [loading, setLoading] = useState(false)
@@ -38,7 +35,7 @@ export default function Login({ onLogin, onCreateAccount }: LoginProps) {
     setLoading(true)
     setTimeout(() => {
       setLoading(false)
-      onLogin()
+      navigate('/dashboard')
     }, 900)
   }
 
@@ -125,7 +122,7 @@ export default function Login({ onLogin, onCreateAccount }: LoginProps) {
         <p style={{ fontSize: 13, color: theme.colors.muted, textAlign: 'center', marginTop: 20 }}>
           ¿No tienes cuenta?{' '}
           <button
-            onClick={onCreateAccount}
+            onClick={() => navigate('/registro')}
             style={{
               background: 'none',
               border: 'none',

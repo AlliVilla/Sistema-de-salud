@@ -3,6 +3,18 @@ import type { Alert, BlockchainEntry, VitalsReading } from '../types'
 // Mock data so the UI works before the FastAPI backend is connected.
 // Replace these imports with `api()` calls (see `lib/api`) when ready.
 
+export const PATIENT = {
+  name: 'Elena Morales',
+  initials: 'EM',
+  age: 42,
+  condition: 'Diabetes tipo 2',
+  subline: 'paciente crónico · diabetes tipo 2',
+  device: 'VitaCore X2 Pro',
+  deviceMac: 'BC:4F:A2:11:DE:09',
+  deviceBattery: 87,
+  deviceBt: 'BT 5.2',
+} as const
+
 export const mockVitals: VitalsReading = {
   heartRate: 82,
   spo2: 97,

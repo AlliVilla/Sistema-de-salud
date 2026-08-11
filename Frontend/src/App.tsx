@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import AppLayout from './components/layout/AppLayout'
 import VincularDispositivo from './pages/onboarding/VincularDispositivo'
 import Login from './pages/onboarding/Login'
@@ -8,10 +8,8 @@ import Alertas from './pages/Alertas'
 import Blockchain from './pages/Blockchain'
 import Perfil from './pages/Perfil'
 import { useBluetooth } from './lib/bluetooth'
-import type { ScreenId } from './types'
 
 export default function App() {
-  const [screen, setScreen] = useState<ScreenId>('vincular')
   const {
     state: btState,
     knownDevices,
@@ -23,25 +21,27 @@ export default function App() {
   } = useBluetooth()
 
   return (
-    <AppLayout currentScreen={screen} onNavigate={setScreen}>
-      {screen === 'vincular' && (
-        <VincularDispositivo
-          onNext={() => setScreen('login')}
-          btState={btState}
-          knownDevices={knownDevices}
-          connectedName={connectedName}
-          scanNewDevice={scanNewDevice}
-          connectToDevice={connectToDevice}
-        />
-      )}
-      {screen === 'login' && (
-        <Login onLogin={() => setScreen('dashboard')} onCreateAccount={() => setScreen('registro')} />
-      )}
-      {screen === 'registro' && <RegistroPaciente onNext={() => setScreen('dashboard')} />}
-      {screen === 'dashboard' && <Dashboard lectura={ultimaLectura} historial={historial} />}
-      {screen === 'alertas' && <Alertas />}
-      {screen === 'blockchain' && <Blockchain />}
-      {screen === 'perfil' && <Perfil />}
-    </AppLayout>
+    <BrowserRouter>
+      <Routes>
+        <Route element={<AppLayout btState={btState} connectedName={connectedName} />}>
+          <Route path="/" element={<Navigate to="/vincular" replace />} />
+          <Route path="/vincular" element={
+            <VincularDispositivo
+              btState={btState}
+              knownDevices={knownDevices}
+              connectedName={connectedName}
+              scanNewDevice={scanNewDevice}
+              connectToDevice={connectToDevice}
+            />
+          } />
+          <Route path="/login" element={<Login />} />
+          <Route path="/registro" element={<RegistroPaciente />} />
+          <Route path="/dashboard" element={<Dashboard lectura={ultimaLectura} historial={historial} />} />
+          <Route path="/alertas" element={<Alertas />} />
+          <Route path="/historial" element={<Blockchain />} />
+          <Route path="/perfil" element={<Perfil />} />
+        </Route>
+      </Routes>
+    </BrowserRouter>
   )
 }

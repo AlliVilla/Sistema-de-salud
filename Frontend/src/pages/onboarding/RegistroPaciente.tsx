@@ -1,13 +1,11 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import EcgLine from '../../components/charts/EcgLine'
 import { theme } from '../../theme'
 import type { PatientProfile } from '../../types'
 
-interface RegistroPacienteProps {
-  onNext: () => void
-}
-
-export default function RegistroPaciente({ onNext }: RegistroPacienteProps) {
+export default function RegistroPaciente() {
+  const navigate = useNavigate()
   const [form, setForm] = useState<PatientProfile>({
     nombre: '',
     edad: '',
@@ -103,7 +101,7 @@ export default function RegistroPaciente({ onNext }: RegistroPacienteProps) {
         }}
       >
         <button
-          onClick={onNext}
+          onClick={() => navigate('/dashboard')}
           style={{
             width: '100%',
             background: theme.colors.teal,
