@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import EcgLine from '../components/charts/EcgLine'
-import { PATIENT } from '../constants/navigation'
+import { PATIENT } from '../lib/mock'
 import { theme } from '../theme'
 
 interface SettingsItem {
