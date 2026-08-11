@@ -8,6 +8,7 @@ interface VincularDispositivoProps {
   btState: BluetoothState
   knownDevices: BleDevice[]
   connectedName: string | null
+  loadingKnown: boolean
   scanNewDevice: () => Promise<BleDevice | null>
   connectToDevice: (device: BleDevice) => Promise<boolean>
 }
@@ -20,7 +21,7 @@ const stateLabel: Record<BluetoothState, string> = {
   error: 'Error',
 }
 
-export default function VincularDispositivo({ btState, knownDevices, connectedName, scanNewDevice, connectToDevice }: VincularDispositivoProps) {
+export default function VincularDispositivo({ btState, knownDevices, connectedName, loadingKnown, scanNewDevice, connectToDevice }: VincularDispositivoProps) {
   const navigate = useNavigate()
   const [scanning, setScanning] = useState(false)
   const [connectingId, setConnectingId] = useState<string | null>(null)
@@ -157,8 +158,26 @@ export default function VincularDispositivo({ btState, knownDevices, connectedNa
                       </div>
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div className="font-display" style={{ fontSize: 14, fontWeight: 600, color: theme.colors.text, marginBottom: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {device.name}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
+                        <div className="font-display" style={{ fontSize: 14, fontWeight: 600, color: theme.colors.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          {device.name}
+                        </div>
+                        {!loadingKnown && !isThisConnected && !isThisConnecting && (
+                          <span
+                            style={{
+                              flexShrink: 0,
+                              fontSize: 9,
+                              fontWeight: 600,
+                              padding: '2px 7px',
+                              borderRadius: 8,
+                              background: device.inRange ? 'rgba(52,211,153,0.12)' : 'rgba(127,160,156,0.08)',
+                              color: device.inRange ? theme.colors.green : '#3E5652',
+                              border: `1px solid ${device.inRange ? 'rgba(52,211,153,0.2)' : 'rgba(127,160,156,0.1)'}`,
+                            }}
+                          >
+                            {device.inRange ? 'en rango' : 'no disponible'}
+                          </span>
+                        )}
                       </div>
                       <div className="font-mono" style={{ fontSize: 10, color: theme.colors.muted }}>
                         {device.id.slice(0, 17)}
@@ -179,7 +198,7 @@ export default function VincularDispositivo({ btState, knownDevices, connectedNa
                               width: 3,
                               height: 5 + i * 3,
                               borderRadius: 1.5,
-                              background: i <= 3 ? theme.colors.teal : 'rgba(45,212,191,0.15)',
+                              background: i <= 3 || device.inRange ? theme.colors.teal : 'rgba(45,212,191,0.15)',
                             }}
                           />
                         ))}
@@ -192,7 +211,7 @@ export default function VincularDispositivo({ btState, knownDevices, connectedNa
           </div>
         )}
 
-        {knownDevices.length === 0 && !isConnecting && (
+        {knownDevices.length === 0 && !isConnecting && !loadingKnown && (
           <div style={{ border: '1.5px dashed rgba(45,212,191,0.25)', borderRadius: 14, background: '#101F22', padding: '28px 20px', textAlign: 'center', marginBottom: 16 }}>
             <svg width="40" height="40" viewBox="0 0 40 40" fill="none" style={{ margin: '0 auto 12px' }}>
               <rect x="4" y="8" width="32" height="24" rx="4" stroke="#2DD4BF" strokeWidth="1.5" strokeOpacity="0.3" />
@@ -201,6 +220,13 @@ export default function VincularDispositivo({ btState, knownDevices, connectedNa
             </svg>
             <p style={{ fontSize: 13, color: theme.colors.muted, marginBottom: 4 }}>No hay dispositivos guardados</p>
             <p style={{ fontSize: 11, color: '#3E5652' }}>Presiona "Escanear" para buscar dispositivos cercanos.</p>
+          </div>
+        )}
+
+        {loadingKnown && (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '32px 20px', color: theme.colors.muted, fontSize: 13 }}>
+            <div className="blink" style={{ width: 6, height: 6, borderRadius: '50%', background: theme.colors.teal }} />
+            Verificando dispositivos guardados…
           </div>
         )}
 

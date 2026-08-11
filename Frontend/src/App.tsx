@@ -16,6 +16,7 @@ export default function App() {
     connectedName,
     scanNewDevice,
     connectToDevice,
+    loadingKnown,
     ultimaLectura,
     historial,
   } = useBluetooth()
@@ -32,11 +33,12 @@ export default function App() {
               connectedName={connectedName}
               scanNewDevice={scanNewDevice}
               connectToDevice={connectToDevice}
+              loadingKnown={loadingKnown}
             />
           } />
           <Route path="/login" element={<Login />} />
           <Route path="/registro" element={<RegistroPaciente />} />
-          <Route path="/dashboard" element={<Dashboard lectura={ultimaLectura} historial={historial} />} />
+          <Route path="/dashboard" element={<Dashboard lectura={ultimaLectura} historial={historial} btState={btState} connectedName={connectedName} knownDevices={knownDevices} connectToDevice={connectToDevice} scanNewDevice={scanNewDevice} />} />
           <Route path="/alertas" element={<Alertas />} />
           <Route path="/historial" element={<Blockchain />} />
           <Route path="/perfil" element={<Perfil />} />

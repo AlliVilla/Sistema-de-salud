@@ -16,9 +16,9 @@ export const PATIENT = {
 } as const
 
 export const mockVitals: VitalsReading = {
-  heartRate: 82,
-  spo2: 97,
-  temperature: 37.1,
+  heartRate: 0,
+  spo2: 0,
+  temperature: 0,
   syncedAt: 'hoy, 08:47:33',
   status: 'sin-anomalias',
 }

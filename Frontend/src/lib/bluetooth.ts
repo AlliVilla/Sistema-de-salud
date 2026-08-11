@@ -4,6 +4,9 @@ const SERVICE_UUID = '4fafc201-1fb5-459e-8fcc-c5c9c331914b'
 const CHARACTERISTIC_UUID = 'beb5483e-36e1-4688-b7f5-ea07361b26a8'
 const MAX_HISTORIAL = 30
 
+const STORAGE_DEVICES_KEY = 'esp32_devices'
+const STORAGE_LAST_CONNECTED_KEY = 'esp32_last_connected'
+
 export type BluetoothState = 'disconnected' | 'scanning' | 'connecting' | 'connected' | 'error'
 
 export interface BleReading {
@@ -15,28 +18,48 @@ export interface BleReading {
   timestamp: string
 }
 
-const ESP32_DEVICE_IDS_KEY = 'esp32_known_ids'
-
-function getKnownEsp32Ids(): Set<string> {
-  try {
-    const raw = localStorage.getItem(ESP32_DEVICE_IDS_KEY)
-    return raw ? new Set(JSON.parse(raw)) : new Set()
-  } catch {
-    return new Set()
-  }
-}
-
-function saveEsp32Id(id: string) {
-  const ids = getKnownEsp32Ids()
-  ids.add(id)
-  localStorage.setItem(ESP32_DEVICE_IDS_KEY, JSON.stringify([...ids]))
-}
-
 export interface BleDevice {
   id: string
   name: string
+  inRange: boolean
   device: BluetoothDevice
 }
+
+// ── localStorage helpers ──────────────────────────────────────────
+
+interface StoredDevice {
+  id: string
+  name: string
+}
+
+function loadStoredDevices(): StoredDevice[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_DEVICES_KEY)
+    return raw ? (JSON.parse(raw) as StoredDevice[]) : []
+  } catch {
+    return []
+  }
+}
+
+function saveStoredDevice(dev: StoredDevice) {
+  const all = loadStoredDevices().filter(d => d.id !== dev.id)
+  all.unshift(dev)
+  localStorage.setItem(STORAGE_DEVICES_KEY, JSON.stringify(all))
+}
+
+function getLastConnectedId(): string | null {
+  return localStorage.getItem(STORAGE_LAST_CONNECTED_KEY)
+}
+
+function setLastConnectedId(id: string | null) {
+  if (id) {
+    localStorage.setItem(STORAGE_LAST_CONNECTED_KEY, id)
+  } else {
+    localStorage.removeItem(STORAGE_LAST_CONNECTED_KEY)
+  }
+}
+
+// ── hook ──────────────────────────────────────────────────────────
 
 export function useBluetooth() {
   const [state, setState] = useState<BluetoothState>('disconnected')
@@ -44,40 +67,70 @@ export function useBluetooth() {
   const [ultimaLectura, setUltimaLectura] = useState<BleReading | null>(null)
   const [knownDevices, setKnownDevices] = useState<BleDevice[]>([])
   const [connectedName, setConnectedName] = useState<string | null>(null)
+  const [loadingKnown, setLoadingKnown] = useState(true)
   const deviceRef = useRef<BluetoothDevice | null>(null)
   const characteristicRef = useRef<BluetoothRemoteGATTCharacteristic | null>(null)
   const connectingRef = useRef(false)
+  const autoReconnectAttemptedRef = useRef(false)
+  const connectToDeviceRef = useRef<(device: BleDevice) => Promise<boolean>>(async () => false)
+
+  // ── load known devices (data-only, no side effects) ─────────────
 
   const loadKnownDevices = useCallback(async () => {
-    if (!('bluetooth' in navigator)) return
-    try {
-      const esp32Ids = getKnownEsp32Ids()
-      const devices = await navigator.bluetooth.getDevices()
-      const mapped: BleDevice[] = devices
-        .filter(d => esp32Ids.has(d.id))
-        .map(d => ({
-          id: d.id,
-          name: d.name || 'Dispositivo sin nombre',
-          device: d,
-        }))
-      setKnownDevices(mapped)
+    if (!('bluetooth' in navigator)) {
+      setLoadingKnown(false)
+      return
+    }
 
-      for (const d of devices) {
-        if (d.gatt?.connected && esp32Ids.has(d.id)) {
-          deviceRef.current = d
-          setConnectedName(d.name || 'Dispositivo')
-          setState('connected')
-          return
-        }
-      }
+    setLoadingKnown(true)
+    const stored = loadStoredDevices()
+    const lastId = getLastConnectedId()
+
+    setKnownDevices(stored.map(s => ({
+      id: s.id,
+      name: s.name,
+      inRange: false,
+      device: null as unknown as BluetoothDevice,
+    })))
+
+    let devices: BluetoothDevice[] = []
+    try {
+      devices = await navigator.bluetooth.getDevices()
     } catch {
-      // getDevices() may fail if no permission yet
+      // permission not granted yet
+    }
+
+    const deviceMap = new Map(devices.map(d => [d.id, d]))
+
+    setKnownDevices(prev => prev.map(d => {
+      const live = deviceMap.get(d.id)
+      return live ? { ...d, inRange: true, device: live } : d
+    }))
+
+    setLoadingKnown(false)
+
+    // Auto-reconnect: runs directly inside the async flow, not via a separate useEffect
+    if (lastId && !autoReconnectAttemptedRef.current) {
+      const live = deviceMap.get(lastId)
+      if (live) {
+        autoReconnectAttemptedRef.current = true
+        const storedMeta = stored.find(s => s.id === lastId)
+        const bleDevice: BleDevice = {
+          id: live.id,
+          name: live.name || storedMeta?.name || 'Dispositivo',
+          inRange: true,
+          device: live,
+        }
+        connectToDeviceRef.current(bleDevice)
+      }
     }
   }, [])
 
   useEffect(() => {
     loadKnownDevices()
   }, [loadKnownDevices])
+
+  // ── scan ────────────────────────────────────────────────────────
 
   const scanNewDevice = useCallback(async (): Promise<BleDevice | null> => {
     if (!('bluetooth' in navigator)) return null
@@ -90,12 +143,13 @@ export function useBluetooth() {
       const mapped: BleDevice = {
         id: device.id,
         name: device.name || 'Dispositivo sin nombre',
+        inRange: true,
         device,
       }
-      saveEsp32Id(device.id)
+      saveStoredDevice({ id: device.id, name: mapped.name })
       setKnownDevices(prev => {
         const exists = prev.find(d => d.id === mapped.id)
-        return exists ? prev : [mapped, ...prev]
+        return exists ? prev.map(d => d.id === mapped.id ? mapped : d) : [mapped, ...prev]
       })
       setState('disconnected')
       return mapped
@@ -104,6 +158,8 @@ export function useBluetooth() {
       return null
     }
   }, [])
+
+  // ── characteristic listener ─────────────────────────────────────
 
   const setupCharacteristicListener = useCallback((characteristic: BluetoothRemoteGATTCharacteristic) => {
     characteristic.addEventListener('characteristicvaluechanged', (event) => {
@@ -132,6 +188,8 @@ export function useBluetooth() {
     })
   }, [])
 
+  // ── connect ─────────────────────────────────────────────────────
+
   const connectToDevice = useCallback(async (bleDevice: BleDevice) => {
     if (connectingRef.current) return false
     connectingRef.current = true
@@ -149,6 +207,9 @@ export function useBluetooth() {
       deviceRef.current = bleDevice.device
       setConnectedName(bleDevice.name)
 
+      saveStoredDevice({ id: bleDevice.device.id, name: bleDevice.name })
+      setLastConnectedId(bleDevice.device.id)
+
       bleDevice.device.addEventListener('gattserverdisconnected', () => {
         setState('disconnected')
         setConnectedName(null)
@@ -156,7 +217,6 @@ export function useBluetooth() {
         deviceRef.current = null
       })
 
-      saveEsp32Id(bleDevice.device.id)
       setState('connected')
       connectingRef.current = false
       return true
@@ -168,7 +228,15 @@ export function useBluetooth() {
     }
   }, [setupCharacteristicListener])
 
+  // Keep the ref in sync so loadKnownDevices can call connectToDevice directly
+  useEffect(() => {
+    connectToDeviceRef.current = connectToDevice
+  }, [connectToDevice])
+
+  // ── disconnect ──────────────────────────────────────────────────
+
   const disconnect = useCallback(() => {
+    setLastConnectedId(null)
     if (deviceRef.current?.gatt?.connected) {
       deviceRef.current.gatt.disconnect()
     }
@@ -181,6 +249,7 @@ export function useBluetooth() {
     scanNewDevice,
     connectToDevice,
     disconnect,
+    loadingKnown,
     ultimaLectura,
     historial,
   }
