@@ -18,7 +18,7 @@
     }
     .header {
       text-align: center;
-      margin-bottom: 30px;
+      margin-bottom: 20px;
     }
     .header h1 {
       font-size: 1.5rem;
@@ -30,6 +30,46 @@
       font-size: 0.85rem;
       margin-top: 4px;
     }
+    .bt-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .bt-btn {
+      background: #1A2E32;
+      border: 1px solid #2DD4BF;
+      color: #2DD4BF;
+      padding: 10px 24px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      font-weight: 600;
+      transition: background 0.2s;
+    }
+    .bt-btn:hover { background: #0F382E; }
+    .bt-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .bt-indicator {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.8rem;
+      color: #7FA09C;
+    }
+    .bt-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #3E5652;
+    }
+    .bt-dot.connected { background: #34D399; }
+    .bt-dot.scanning { background: #FFB454; animation: blink 0.8s infinite; }
+    .bt-dot.error { background: #FF6B6B; }
     .ecg-line {
       width: 100%;
       max-width: 600px;
@@ -133,6 +173,14 @@
     <p>ESP32 + MAX30102 + DS18B20</p>
   </div>
 
+  <div class="bt-bar">
+    <button class="bt-btn" id="bt-connect" onclick="conectarBluetooth()">Buscar dispositivos</button>
+    <div class="bt-indicator">
+      <span class="bt-dot" id="bt-dot"></span>
+      <span id="bt-status">Desconectado</span>
+    </div>
+  </div>
+
   <svg class="ecg-line" viewBox="0 0 600 40" fill="none">
     <rect width="600" height="40" rx="10" fill="#101F22"/>
     <polyline points="0,20 50,20 55,20 60,5 65,35 70,20 130,20 135,20 140,8 145,32 150,20 210,20 215,20 220,5 225,35 230,20 290,20 295,20 300,6 305,34 310,20 370,20 375,20 380,5 385,35 390,20 450,20 455,20 460,7 465,33 470,20 530,20 535,20 540,5 545,35 550,20 600,20"
@@ -160,7 +208,7 @@
     </div>
   </div>
 
-  <div class="last-sync" id="sync-info">Esperando datos del ESP32...</div>
+  <div class="last-sync" id="sync-info">Haz clic en "Buscar dispositivos" y conecta el ESP32</div>
 
   <div class="table-container">
     <table>
@@ -177,57 +225,142 @@
   </div>
 
   <script>
-    function valOrNA(v, valid, decimals) {
-      if (v === null || v === undefined) return '<span class="na">--</span>';
-      if (valid !== undefined && !valid) return '<span class="na">calculando</span>';
-      return (typeof v === 'number' ? v.toFixed(decimals || 0) : v);
+    const SERVICE_UUID = '4fafc201-1fb5-459e-8fcc-c5c9c331914b';
+    const CHARACTERISTIC_UUID = 'beb5483e-36e1-4688-b7f5-ea07361b26a8';
+
+    let btDevice = null;
+    let btCharacteristic = null;
+    let conectando = false;
+    let historial = [];
+
+    const MAX_HISTORIAL = 30;
+
+    function setBtState(state) {
+      const dot = document.getElementById('bt-dot');
+      const status = document.getElementById('bt-status');
+      const btn = document.getElementById('bt-connect');
+      dot.className = 'bt-dot';
+      btn.disabled = conectando;
+      switch (state) {
+        case 'connected':
+          dot.classList.add('connected');
+          status.textContent = 'Conectado al ESP32';
+          btn.textContent = 'Desconectar';
+          break;
+        case 'scanning':
+          dot.classList.add('scanning');
+          status.textContent = 'Escaneando...';
+          btn.textContent = 'Escaneando...';
+          break;
+        case 'disconnected':
+          status.textContent = 'Desconectado';
+          btn.textContent = 'Buscar dispositivos';
+          break;
+        case 'error':
+          dot.classList.add('error');
+          status.textContent = 'Error de conexión';
+          btn.textContent = 'Reintentar';
+          break;
+      }
     }
 
-    async function actualizar() {
+    async function conectarBluetooth() {
+      if (btDevice && btDevice.gatt.connected) {
+        btDevice.gatt.disconnect();
+        setBtState('disconnected');
+        return;
+      }
+
+      if (conectando) return;
+      conectando = true;
+
       try {
-        const res = await fetch('/data');
-        const data = await res.json();
-        const u = data.ultima;
+        setBtState('scanning');
 
-        if (u.temp !== null) {
-          document.getElementById('temp-value').textContent = u.temp.toFixed(1);
-          document.getElementById('temp-status').textContent = 'activo';
-          document.getElementById('temp-status').className = 'card-status status-ok';
-        } else {
-          document.getElementById('temp-value').textContent = '--';
-          document.getElementById('temp-status').textContent = 'sin sensor';
-          document.getElementById('temp-status').className = 'card-status status-warn';
-        }
+        btDevice = await navigator.bluetooth.requestDevice({
+          filters: [{ services: [SERVICE_UUID] }],
+        });
 
-        if (u.hrValid) {
-          document.getElementById('hr-value').textContent = u.hr;
-          document.getElementById('hr-status').textContent = 'activo';
-          document.getElementById('hr-status').className = 'card-status status-ok';
-          document.querySelector('.dot-warn').className = 'pulse-dot dot-ok';
-        } else {
-          document.getElementById('hr-value').textContent = u.hr || '--';
-          document.getElementById('hr-status').textContent = 'calculando';
-          document.getElementById('hr-status').className = 'card-status status-warn';
-          document.querySelector('.dot-ok')?.classList?.replace?.('dot-ok', 'dot-warn');
-        }
+        const server = await btDevice.gatt.connect();
+        const service = await server.getPrimaryService(SERVICE_UUID);
+        btCharacteristic = await service.getCharacteristic(CHARACTERISTIC_UUID);
 
-        if (u.spo2Valid) {
-          document.getElementById('spo2-value').textContent = u.spo2;
-          document.getElementById('spo2-status').textContent = 'activo';
-          document.getElementById('spo2-status').className = 'card-status status-ok';
-        } else {
-          document.getElementById('spo2-value').textContent = u.spo2 || '--';
-          document.getElementById('spo2-status').textContent = 'calculando';
-          document.getElementById('spo2-status').className = 'card-status status-warn';
-        }
+        await btCharacteristic.startNotifications();
+        btCharacteristic.addEventListener('characteristicvaluechanged', onDatoRecibido);
 
-        if (u.timestamp) {
-          document.getElementById('sync-info').textContent =
-            'Última lectura: ' + new Date(u.timestamp).toLocaleTimeString();
-        }
+        setBtState('connected');
 
+        btDevice.addEventListener('gattserverdisconnected', () => {
+          setBtState('disconnected');
+          btCharacteristic = null;
+        });
+      } catch (err) {
+        console.error('Error BLE:', err);
+        setBtState('error');
+        btDevice = null;
+        btCharacteristic = null;
+      } finally {
+        conectando = false;
+      }
+    }
+
+    function onDatoRecibido(event) {
+      try {
+        const decoder = new TextDecoder('utf-8');
+        const valor = decoder.decode(event.target.value);
+        const datos = JSON.parse(valor);
+
+        const lectura = { ...datos, timestamp: new Date().toISOString() };
+        historial.push(lectura);
+        if (historial.length > MAX_HISTORIAL) historial.shift();
+
+        actualizarUI(lectura, [...historial].reverse());
+      } catch (err) {
+        console.error('Error procesando dato BLE:', err);
+      }
+    }
+
+    function actualizarUI(u, his) {
+      if (u.temp !== null && u.temp !== undefined) {
+        document.getElementById('temp-value').textContent = u.temp.toFixed(1);
+        document.getElementById('temp-status').textContent = 'activo';
+        document.getElementById('temp-status').className = 'card-status status-ok';
+      } else {
+        document.getElementById('temp-value').textContent = '--';
+        document.getElementById('temp-status').textContent = 'sin sensor';
+        document.getElementById('temp-status').className = 'card-status status-warn';
+      }
+
+      if (u.hrValid) {
+        document.getElementById('hr-value').textContent = u.hr;
+        document.getElementById('hr-status').textContent = 'activo';
+        document.getElementById('hr-status').className = 'card-status status-ok';
+        const dot = document.querySelector('.pulse-dot.dot-warn, .pulse-dot.dot-ok');
+        if (dot) { dot.className = 'pulse-dot dot-ok'; }
+      } else {
+        document.getElementById('hr-value').textContent = u.hr || '--';
+        document.getElementById('hr-status').textContent = 'calculando';
+        document.getElementById('hr-status').className = 'card-status status-warn';
+      }
+
+      if (u.spo2Valid) {
+        document.getElementById('spo2-value').textContent = u.spo2;
+        document.getElementById('spo2-status').textContent = 'activo';
+        document.getElementById('spo2-status').className = 'card-status status-ok';
+      } else {
+        document.getElementById('spo2-value').textContent = u.spo2 || '--';
+        document.getElementById('spo2-status').textContent = 'calculando';
+        document.getElementById('spo2-status').className = 'card-status status-warn';
+      }
+
+      if (u.timestamp) {
+        document.getElementById('sync-info').textContent =
+          'Última lectura: ' + new Date(u.timestamp).toLocaleTimeString();
+      }
+
+      if (his) {
         const tbody = document.getElementById('tabla-body');
-        tbody.innerHTML = data.historial.map(l => `
+        tbody.innerHTML = his.map(l => `
           <tr>
             <td>${new Date(l.timestamp).toLocaleTimeString()}</td>
             <td>${l.temp !== null ? l.temp.toFixed(1) : '<span class="na">--</span>'}</td>
@@ -235,10 +368,8 @@
             <td>${l.spo2Valid ? l.spo2 : '<span class="na">calculando</span>'}</td>
           </tr>
         `).join('');
-      } catch (e) { console.error('Error al obtener datos', e); }
+      }
     }
-    actualizar();
-    setInterval(actualizar, 2000);
   </script>
 </body>
 </html>

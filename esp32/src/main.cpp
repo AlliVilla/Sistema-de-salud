@@ -1,16 +1,15 @@
-#include <WiFi.h>
-#include <WiFiUdp.h>
+#include <BLEDevice.h>
+#include <BLEServer.h>
+#include <BLEUtils.h>
+#include <BLE2902.h>
 #include <Wire.h>
 #include <OneWire.h>
 #include <DallasTemperature.h>
 #include "MAX30105.h"
 #include "spo2_algorithm.h"
 
-const char* ap_ssid = "ESP32-Sensor";
-const char* ap_password = "12345678";
-
-IPAddress targetIP(192, 168, 4, 2);
-const int targetPort = 4210;
+#define SERVICE_UUID        "4fafc201-1fb5-459e-8fcc-c5c9c331914b"
+#define CHARACTERISTIC_UUID "beb5483e-36e1-4688-b7f5-ea07361b26a8"
 
 // =========================
 // DS18B20
@@ -30,7 +29,25 @@ MAX30105 particleSensor;
 
 bool max30102Ready = false;
 
-WiFiUDP udp;
+// =========================
+// BLE
+// =========================
+BLEServer *pServer = NULL;
+BLECharacteristic *pCharacteristic = NULL;
+bool deviceConnected = false;
+
+class MyServerCallbacks : public BLEServerCallbacks {
+  void onConnect(BLEServer *pServer) {
+    deviceConnected = true;
+    Serial.println("Cliente BLE conectado");
+  }
+
+  void onDisconnect(BLEServer *pServer) {
+    deviceConnected = false;
+    Serial.println("Cliente BLE desconectado. Esperando nueva conexión...");
+    BLEDevice::startAdvertising();
+  }
+};
 
 // =========================
 // Variables MAX30102
@@ -156,10 +173,6 @@ bool initMAX30102() {
 // =========================
 void readMAX30102() {
 
-  Serial.println(
-    "Leyendo 100 muestras del MAX30102..."
-  );
-
   for (int i = 0; i < bufferLength; i++) {
 
     while (
@@ -222,21 +235,33 @@ void setup() {
 
 
   // =========================
-  // WiFi AP
+  // BLE
   // =========================
 
-  WiFi.softAP(
-    ap_ssid,
-    ap_password
+  BLEDevice::init("ESP32-VitalSigns");
+
+  pServer = BLEDevice::createServer();
+  pServer->setCallbacks(new MyServerCallbacks());
+
+  BLEService *pService = pServer->createService(SERVICE_UUID);
+
+  pCharacteristic = pService->createCharacteristic(
+    CHARACTERISTIC_UUID,
+    BLECharacteristic::PROPERTY_READ |
+    BLECharacteristic::PROPERTY_NOTIFY
   );
 
-  Serial.print(
-    "AP creado. IP: "
-  );
+  pCharacteristic->addDescriptor(new BLE2902());
 
-  Serial.println(
-    WiFi.softAPIP()
-  );
+  pService->start();
+
+  BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();
+  pAdvertising->addServiceUUID(SERVICE_UUID);
+  pAdvertising->setScanResponse(true);
+  BLEDevice::startAdvertising();
+
+  Serial.println("BLE listo. Dispositivo: ESP32-VitalSigns");
+  Serial.println("Esperando conexión desde el navegador...\n");
 
 
   // =========================
@@ -308,14 +333,6 @@ void setup() {
 
   }
 
-
-  // =========================
-  // UDP
-  // =========================
-
-  udp.begin(
-    targetPort
-  );
 
   Serial.println(
     "\nIniciando loop...\n"
@@ -427,19 +444,15 @@ void loop() {
 
 
   // =========================
-  // UDP
+  // BLE Notify
   // =========================
 
-  udp.beginPacket(
-    targetIP,
-    targetPort
-  );
+  if (deviceConnected) {
 
-  udp.print(
-    payload
-  );
+    pCharacteristic->setValue(payload.c_str());
 
-  udp.endPacket();
+    pCharacteristic->notify();
+  }
 
 
   Serial.println(
