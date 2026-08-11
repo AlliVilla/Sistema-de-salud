@@ -1,59 +1,53 @@
-const http = require('http');
-const dgram = require('dgram');
-const fs = require('fs');
-const path = require('path');
+const http = require('http')
+const fs = require('fs')
+const path = require('path')
 
-const UDP_PORT = 4210; 
-const HTTP_PORT = 3001;
-const MAX_HISTORIAL = 30;
+const PORT = 8443
+const DIST_DIR = path.join(__dirname, '..', '..', 'Frontend', 'dist')
 
-let historial = []; 
-
-const udpServer = dgram.createSocket('udp4');
-
-udpServer.on('message', (msg, rinfo) => {
-  const temp = parseFloat(msg.toString());
-  const lectura = { temp, timestamp: new Date().toISOString() };
-
-  historial.push(lectura);
-  if (historial.length > MAX_HISTORIAL) historial.shift();
-
-  console.log(`[${lectura.timestamp}] ${rinfo.address} -> ${temp} °C`);
-});
-
-udpServer.on('error', (err) => {
-  console.error(`Error UDP: ${err.stack}`);
-  udpServer.close();
-});
-
-udpServer.bind(UDP_PORT, () => {
-  console.log(`Escuchando datos UDP en el puerto ${UDP_PORT}`);
-});
-
+const MIME = {
+  '.html': 'text/html',
+  '.js': 'application/javascript',
+  '.mjs': 'application/javascript',
+  '.css': 'text/css',
+  '.svg': 'image/svg+xml',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.ico': 'image/x-icon',
+  '.json': 'application/json',
+  '.woff': 'font/woff',
+  '.woff2': 'font/woff2',
+}
 
 const httpServer = http.createServer((req, res) => {
-  if (req.url === '/data') {
-    const ultima = historial[historial.length - 1] || { temp: null, timestamp: null };
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({
-      ultima,
-      historial: [...historial].reverse() // más reciente primero
-    }));
-    return;
+  let filePath
+
+  if (req.url === '/') {
+    filePath = path.join(DIST_DIR, 'index.html')
+  } else {
+    filePath = path.join(DIST_DIR, req.url)
+    const ext = path.extname(filePath)
+    if (!ext) {
+      filePath = path.join(DIST_DIR, 'index.html')
+    }
   }
 
-  const indexPath = path.join(__dirname, 'public', 'index.html');
-  fs.readFile(indexPath, (err, data) => {
-    if (err) {
-      res.writeHead(500);
-      res.end('Error cargando la página');
-      return;
-    }
-    res.writeHead(200, { 'Content-Type': 'text/html' });
-    res.end(data);
-  });
-});
+  const ext = path.extname(filePath)
+  const contentType = MIME[ext] || 'application/octet-stream'
 
-httpServer.listen(HTTP_PORT, () => {
-  console.log(`Página disponible en http://localhost:${HTTP_PORT}`);
-});
+  fs.readFile(filePath, (err, data) => {
+    if (err) {
+      res.writeHead(404, { 'Content-Type': 'text/plain' })
+      res.end('Not found')
+      return
+    }
+    res.writeHead(200, { 'Content-Type': contentType })
+    res.end(data)
+  })
+})
+
+httpServer.listen(PORT, () => {
+  console.log(`Monitor disponible en http://localhost:${PORT}`)
+  console.log('Abre esta URL en Chrome o Edge para usar Web Bluetooth.')
+})

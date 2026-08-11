@@ -1,48 +1,26 @@
-import type { ReactNode } from 'react'
 import { NavLink } from 'react-router-dom'
 import { NAV_ITEMS } from '../../constants/navigation'
 import { ROUTES } from '../../constants/routes'
+import { renderNavIcon } from '../shared/Icons'
+import type { NavIconKey } from '../shared/Icons'
+import type { BluetoothState } from '../../lib/bluetooth'
 import type { ScreenId } from '../../types'
 
 interface SidebarProps {
   currentScreen: ScreenId
+  btState: BluetoothState
+  connectedName: string | null
 }
 
-function renderIcon(key: string, size: number): ReactNode {
-  return (
-    <svg key={key} width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
-      {key === 'home' && (
-        <>
-          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-          <polyline points="9 22 9 12 15 12 15 22" />
-        </>
-      )}
-      {key === 'alert' && (
-        <>
-          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
-          <line x1="12" y1="9" x2="12" y2="13" />
-          <line x1="12" y1="17" x2="12.01" y2="17" />
-        </>
-      )}
-      {key === 'hist' && (
-        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-      )}
-      {key === 'user' && (
-        <>
-          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-          <circle cx="12" cy="7" r="4" />
-        </>
-      )}
-    </svg>
-  )
-}
+const NAV_ICONS: NavIconKey[] = ['home', 'alert', 'hist', 'user']
 
-const NAV_KEYS = ['home', 'alert', 'hist', 'user']
+export default function Sidebar({ currentScreen, btState, connectedName }: SidebarProps) {
+  const isConnected = btState === 'connected'
+  const deviceName = connectedName || 'Sin dispositivo'
+  const deviceStatus = isConnected ? 'dispositivo conectado' : 'desconectado'
 
-export default function Sidebar({ currentScreen }: SidebarProps) {
   return (
     <aside className="hidden w-[264px] flex-none flex-col border-r border-[var(--border)] bg-[var(--bg-base)] md:flex">
-      {/* Logo */}
       <div className="flex items-center gap-3 px-[22px] pt-7 pb-6">
         <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--surface-1)]">
           <svg width="20" height="20" viewBox="0 0 36 36" fill="none">
@@ -57,7 +35,6 @@ export default function Sidebar({ currentScreen }: SidebarProps) {
 
       <div className="mt-[30px] mx-[22px] h-px bg-[var(--border)]" />
 
-      {/* Navegación — pegada a la parte superior, bajo el logo */}
       <div className="flex flex-1 flex-col px-3">
         <p className="px-3 pb-1 text-[10px] font-medium uppercase tracking-[0.2em] text-[var(--text-muted)]">
           Menú
@@ -85,7 +62,7 @@ export default function Sidebar({ currentScreen }: SidebarProps) {
                   className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg transition-colors duration-200 ${isActive ? 'bg-[rgba(45,212,191,0.14)] text-[var(--accent-teal)]' : ''
                     }`}
                 >
-                  {renderIcon(NAV_KEYS[i], 20)}
+                  {renderNavIcon(NAV_ICONS[i], 20)}
                 </span>
                 <span
                   className="text-[15px]"
@@ -99,16 +76,17 @@ export default function Sidebar({ currentScreen }: SidebarProps) {
         </nav>
       </div>
 
-      {/* Dispositivo empujado al fondo */}
       <div className="px-4 pb-5 pt-4">
         <div className="flex items-center gap-3 rounded-2xl border border-[var(--border)] bg-[var(--surface-1)] px-3 py-3">
           <span className="relative flex h-2.5 w-2.5">
-            <span className="absolute inline-flex h-full w-full rounded-full bg-[var(--accent-teal)] opacity-60 animate-ping" />
-            <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-[var(--accent-teal)]" />
+            {isConnected && (
+              <span className="absolute inline-flex h-full w-full rounded-full bg-[var(--accent-teal)] opacity-60 animate-ping" />
+            )}
+            <span className={`relative inline-flex h-2.5 w-2.5 rounded-full ${isConnected ? 'bg-[var(--accent-teal)]' : 'bg-[#3E5652]'}`} />
           </span>
           <div className="min-w-0">
-            <p className="truncate text-sm font-medium text-[var(--text-primary)]">VitaCore X2 Pro</p>
-            <p className="truncate text-[11px] text-[var(--text-muted)]">dispositivo conectado</p>
+            <p className="truncate text-sm font-medium text-[var(--text-primary)]">{deviceName}</p>
+            <p className="truncate text-[11px] text-[var(--text-muted)]">{deviceStatus}</p>
           </div>
         </div>
       </div>

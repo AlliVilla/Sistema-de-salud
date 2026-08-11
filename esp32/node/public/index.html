@@ -2,80 +2,374 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Temperatura ESP32</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Monitor de Signos Vitales - ESP32</title>
   <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
-      font-family: system-ui, sans-serif;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #0A1618;
+      color: #EAF2F1;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+    }
+    .header {
       text-align: center;
-      margin-top: 60px;
-      background: #111827;
-      color: #e5e7eb;
+      margin-bottom: 20px;
     }
-    #temp {
-      font-size: 6rem;
-      font-weight: bold;
-      color: #4fd1c5;
+    .header h1 {
+      font-size: 1.5rem;
+      color: #2DD4BF;
+      font-weight: 600;
     }
-    #hora {
-      color: #9ca3af;
-      margin-top: 10px;
+    .header p {
+      color: #7FA09C;
+      font-size: 0.85rem;
+      margin-top: 4px;
+    }
+    .bt-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .bt-btn {
+      background: #1A2E32;
+      border: 1px solid #2DD4BF;
+      color: #2DD4BF;
+      padding: 10px 24px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      cursor: pointer;
+      font-weight: 600;
+      transition: background 0.2s;
+    }
+    .bt-btn:hover { background: #0F382E; }
+    .bt-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .bt-indicator {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.8rem;
+      color: #7FA09C;
+    }
+    .bt-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #3E5652;
+    }
+    .bt-dot.connected { background: #34D399; }
+    .bt-dot.scanning { background: #FFB454; animation: blink 0.8s infinite; }
+    .bt-dot.error { background: #FF6B6B; }
+    .ecg-line {
+      width: 100%;
+      max-width: 600px;
+      margin-bottom: 30px;
+    }
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 16px;
+      max-width: 700px;
+      width: 100%;
+      margin-bottom: 30px;
+    }
+    .card {
+      background: #101F22;
+      border: 1px solid #1A2E32;
+      border-radius: 14px;
+      padding: 20px;
+      text-align: center;
+    }
+    .card-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #7FA09C;
+      margin-bottom: 6px;
+    }
+    .card-value {
+      font-size: 2.2rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+    .card-unit {
+      font-size: 0.85rem;
+      font-weight: 400;
+      color: #7FA09C;
+    }
+    .card-temp .card-value { color: #FFB454; }
+    .card-hr .card-value { color: #FF6B6B; }
+    .card-spo2 .card-value { color: #2DD4BF; }
+    .card-status {
+      margin-top: 6px;
+      font-size: 0.7rem;
+      padding: 2px 10px;
+      border-radius: 10px;
+      display: inline-block;
+    }
+    .status-ok { background: #0F382E; color: #34D399; }
+    .status-warn { background: #38280F; color: #FFB454; }
+    .last-sync {
+      color: #7FA09C;
+      font-size: 0.8rem;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .table-container {
+      max-width: 700px;
+      width: 100%;
+      overflow-x: auto;
     }
     table {
-      margin: 40px auto 0;
+      width: 100%;
       border-collapse: collapse;
-      width: 320px;
-    }
-    th, td {
-      padding: 6px 12px;
-      border-bottom: 1px solid #374151;
+      font-size: 0.85rem;
     }
     th {
-      color: #9ca3af;
-      font-weight: normal;
       text-align: left;
+      padding: 8px 12px;
+      color: #7FA09C;
+      font-weight: 500;
+      border-bottom: 1px solid #1A2E32;
+      text-transform: uppercase;
+      font-size: 0.7rem;
+      letter-spacing: 0.06em;
     }
     td {
-      text-align: left;
+      padding: 8px 12px;
+      border-bottom: 1px solid #101F22;
     }
+    tr:hover td { background: #101F22; }
+    .na { color: #3E5652; }
+    .pulse-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-right: 6px;
+      animation: blink 1.2s infinite;
+    }
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.3; }
+    }
+    .dot-ok { background: #34D399; }
+    .dot-warn { background: #FF6B6B; }
   </style>
 </head>
 <body>
-  <h1>Temperatura del sensor</h1>
-  <div id="temp">--</div>
-  <div id="hora">Esperando datos...</div>
+  <div class="header">
+    <h1>Monitor de Signos Vitales</h1>
+    <p>ESP32 + MAX30102 + DS18B20</p>
+  </div>
 
-  <table>
-    <thead>
-      <tr><th>Hora</th><th>Temp (°C)</th></tr>
-    </thead>
-    <tbody id="tabla-body"></tbody>
-  </table>
+  <div class="bt-bar">
+    <button class="bt-btn" id="bt-connect" onclick="conectarBluetooth()">Buscar dispositivos</button>
+    <div class="bt-indicator">
+      <span class="bt-dot" id="bt-dot"></span>
+      <span id="bt-status">Desconectado</span>
+    </div>
+  </div>
+
+  <svg class="ecg-line" viewBox="0 0 600 40" fill="none">
+    <rect width="600" height="40" rx="10" fill="#101F22"/>
+    <polyline points="0,20 50,20 55,20 60,5 65,35 70,20 130,20 135,20 140,8 145,32 150,20 210,20 215,20 220,5 225,35 230,20 290,20 295,20 300,6 305,34 310,20 370,20 375,20 380,5 385,35 390,20 450,20 455,20 460,7 465,33 470,20 530,20 535,20 540,5 545,35 550,20 600,20"
+          stroke="#2DD4BF" stroke-width="1.5" fill="none" stroke-opacity="0.5"/>
+  </svg>
+
+  <div class="cards">
+    <div class="card card-hr">
+      <div class="card-label"><span class="pulse-dot dot-warn"></span>Frecuencia Cardíaca</div>
+      <div class="card-value" id="hr-value">--</div>
+      <div class="card-unit">bpm</div>
+      <div class="card-status status-warn" id="hr-status">esperando</div>
+    </div>
+    <div class="card card-spo2">
+      <div class="card-label">Saturación de Oxígeno</div>
+      <div class="card-value" id="spo2-value">--</div>
+      <div class="card-unit">%</div>
+      <div class="card-status status-ok" id="spo2-status">esperando</div>
+    </div>
+    <div class="card card-temp">
+      <div class="card-label">Temperatura</div>
+      <div class="card-value" id="temp-value">--</div>
+      <div class="card-unit">°C</div>
+      <div class="card-status status-ok" id="temp-status">esperando</div>
+    </div>
+  </div>
+
+  <div class="last-sync" id="sync-info">Haz clic en "Buscar dispositivos" y conecta el ESP32</div>
+
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>Hora</th>
+          <th>Temp (°C)</th>
+          <th>FC (bpm)</th>
+          <th>SpO₂ (%)</th>
+        </tr>
+      </thead>
+      <tbody id="tabla-body"></tbody>
+    </table>
+  </div>
 
   <script>
-    async function actualizar() {
-      try {
-        const res = await fetch('/data');
-        const data = await res.json();
+    const SERVICE_UUID = '4fafc201-1fb5-459e-8fcc-c5c9c331914b';
+    const CHARACTERISTIC_UUID = 'beb5483e-36e1-4688-b7f5-ea07361b26a8';
 
-        if (data.ultima.temp !== null) {
-          document.getElementById('temp').textContent = data.ultima.temp.toFixed(2) + ' °C';
-          document.getElementById('hora').textContent =
-            'Última lectura: ' + new Date(data.ultima.timestamp).toLocaleTimeString();
-        }
+    let btDevice = null;
+    let btCharacteristic = null;
+    let conectando = false;
+    let historial = [];
 
-        const tbody = document.getElementById('tabla-body');
-        tbody.innerHTML = data.historial.map(l => `
-          <tr>
-            <td>${new Date(l.timestamp).toLocaleTimeString()}</td>
-            <td>${l.temp.toFixed(2)}</td>
-          </tr>
-        `).join('');
-      } catch (e) {
-        console.error('Error al obtener datos', e);
+    const MAX_HISTORIAL = 30;
+
+    function setBtState(state) {
+      const dot = document.getElementById('bt-dot');
+      const status = document.getElementById('bt-status');
+      const btn = document.getElementById('bt-connect');
+      dot.className = 'bt-dot';
+      btn.disabled = conectando;
+      switch (state) {
+        case 'connected':
+          dot.classList.add('connected');
+          status.textContent = 'Conectado al ESP32';
+          btn.textContent = 'Desconectar';
+          break;
+        case 'scanning':
+          dot.classList.add('scanning');
+          status.textContent = 'Escaneando...';
+          btn.textContent = 'Escaneando...';
+          break;
+        case 'disconnected':
+          status.textContent = 'Desconectado';
+          btn.textContent = 'Buscar dispositivos';
+          break;
+        case 'error':
+          dot.classList.add('error');
+          status.textContent = 'Error de conexión';
+          btn.textContent = 'Reintentar';
+          break;
       }
     }
-    actualizar();
-    setInterval(actualizar, 2000);
+
+    async function conectarBluetooth() {
+      if (btDevice && btDevice.gatt.connected) {
+        btDevice.gatt.disconnect();
+        setBtState('disconnected');
+        return;
+      }
+
+      if (conectando) return;
+      conectando = true;
+
+      try {
+        setBtState('scanning');
+
+        btDevice = await navigator.bluetooth.requestDevice({
+          filters: [{ services: [SERVICE_UUID] }],
+        });
+
+        const server = await btDevice.gatt.connect();
+        const service = await server.getPrimaryService(SERVICE_UUID);
+        btCharacteristic = await service.getCharacteristic(CHARACTERISTIC_UUID);
+
+        await btCharacteristic.startNotifications();
+        btCharacteristic.addEventListener('characteristicvaluechanged', onDatoRecibido);
+
+        setBtState('connected');
+
+        btDevice.addEventListener('gattserverdisconnected', () => {
+          setBtState('disconnected');
+          btCharacteristic = null;
+        });
+      } catch (err) {
+        console.error('Error BLE:', err);
+        setBtState('error');
+        btDevice = null;
+        btCharacteristic = null;
+      } finally {
+        conectando = false;
+      }
+    }
+
+    function onDatoRecibido(event) {
+      try {
+        const decoder = new TextDecoder('utf-8');
+        const valor = decoder.decode(event.target.value);
+        const datos = JSON.parse(valor);
+
+        const lectura = { ...datos, timestamp: new Date().toISOString() };
+        historial.push(lectura);
+        if (historial.length > MAX_HISTORIAL) historial.shift();
+
+        actualizarUI(lectura, [...historial].reverse());
+      } catch (err) {
+        console.error('Error procesando dato BLE:', err);
+      }
+    }
+
+    function actualizarUI(u, his) {
+      if (u.temp !== null && u.temp !== undefined) {
+        document.getElementById('temp-value').textContent = u.temp.toFixed(1);
+        document.getElementById('temp-status').textContent = 'activo';
+        document.getElementById('temp-status').className = 'card-status status-ok';
+      } else {
+        document.getElementById('temp-value').textContent = '--';
+        document.getElementById('temp-status').textContent = 'sin sensor';
+        document.getElementById('temp-status').className = 'card-status status-warn';
+      }
+
+      if (u.hrValid) {
+        document.getElementById('hr-value').textContent = u.hr;
+        document.getElementById('hr-status').textContent = 'activo';
+        document.getElementById('hr-status').className = 'card-status status-ok';
+        const dot = document.querySelector('.pulse-dot.dot-warn, .pulse-dot.dot-ok');
+        if (dot) { dot.className = 'pulse-dot dot-ok'; }
+      } else {
+        document.getElementById('hr-value').textContent = u.hr || '--';
+        document.getElementById('hr-status').textContent = 'calculando';
+        document.getElementById('hr-status').className = 'card-status status-warn';
+      }
+
+      if (u.spo2Valid) {
+        document.getElementById('spo2-value').textContent = u.spo2;
+        document.getElementById('spo2-status').textContent = 'activo';
+        document.getElementById('spo2-status').className = 'card-status status-ok';
+      } else {
+        document.getElementById('spo2-value').textContent = u.spo2 || '--';
+        document.getElementById('spo2-status').textContent = 'calculando';
+        document.getElementById('spo2-status').className = 'card-status status-warn';
+      }
+
+      if (u.timestamp) {
+        document.getElementById('sync-info').textContent =
+          'Última lectura: ' + new Date(u.timestamp).toLocaleTimeString();
+      }
+
+      if (his) {
+        const tbody = document.getElementById('tabla-body');
+        tbody.innerHTML = his.map(l => `
+          <tr>
+            <td>${new Date(l.timestamp).toLocaleTimeString()}</td>
+            <td>${l.temp !== null ? l.temp.toFixed(1) : '<span class="na">--</span>'}</td>
+            <td>${l.hrValid ? l.hr : '<span class="na">calculando</span>'}</td>
+            <td>${l.spo2Valid ? l.spo2 : '<span class="na">calculando</span>'}</td>
+          </tr>
+        `).join('');
+      }
+    }
   </script>
 </body>
 </html>
