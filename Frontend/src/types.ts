@@ -53,3 +53,5 @@ export interface BlockchainEntry {
   block: string
   status: 'verificado' | 'pendiente'
 }
+
+export type { BluetoothState, BleReading } from './lib/bluetooth'
