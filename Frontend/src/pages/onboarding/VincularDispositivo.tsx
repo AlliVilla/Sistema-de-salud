@@ -44,7 +44,7 @@ export default function VincularDispositivo({ btState, knownDevices, connectedNa
     const ok = await connectToDevice(device)
     setConnectingId(null)
     if (ok) {
-      setTimeout(() => navigate('/login'), 800)
+      setTimeout(() => navigate('/dashboard'), 800)
     } else {
       setErrorMsg('No se pudo conectar al dispositivo. Intenta de nuevo.')
     }
