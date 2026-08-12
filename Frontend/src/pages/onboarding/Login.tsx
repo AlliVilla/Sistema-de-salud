@@ -2,8 +2,13 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import EcgLine from '../../components/charts/EcgLine'
 import { theme } from '../../theme'
+import type { BluetoothState } from '../../lib/bluetooth'
 
-export default function Login() {
+interface LoginProps {
+  btState: BluetoothState
+}
+
+export default function Login({ btState }: LoginProps) {
   const navigate = useNavigate()
   const [correo, setCorreo] = useState('')
   const [contrasena, setContrasena] = useState('')
@@ -35,7 +40,7 @@ export default function Login() {
     setLoading(true)
     setTimeout(() => {
       setLoading(false)
-      navigate('/dashboard')
+      navigate(btState === 'connected' ? '/dashboard' : '/vincular')
     }, 900)
   }
 
