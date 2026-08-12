@@ -17,7 +17,7 @@ const create = async(req, res) => {
         })
 
         const findEmail = await User.find({ email })
-        if(findEmail){
+        if(findEmail.length > 0){
             return res.status(409).send("Resource already exists, email already in use")
         }
 
