@@ -33,13 +33,22 @@ const users = new mongoose.Schema({
     },
     address: {
         type: String,
-        required: [true, 'El dirección  es requerida.'],
+        required: [true, 'La dirección es requerida.'],
         trim: true
     },
     status: {
         type: Boolean,
         default: true
     },
+    age: {
+        type: Number,
+        required: [true, 'La edad es requerida.']
+    },
+    condition: {
+        type: String,
+        required: [true, 'Su condicion es requerida.'],
+        trim: true
+    }
 },{
     timestamps: true
 });

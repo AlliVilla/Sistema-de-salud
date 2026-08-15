@@ -3,8 +3,8 @@ import bycrypt from 'bcryptjs'
 
 const createUser = async(req, res) => {
     try{
-        const { email, password, name, phone, emergency_phone, address } =  req.body;
-        if(!email || !password || !name || !phone || !emergency_phone || !address ){
+        const { email, password, name, phone, emergency_phone, address, age, condition } =  req.body;
+        if(!email || !password || !name || !phone || !emergency_phone || !address || !age || !condition ){
             return res.status(400).send("Bad request, some fields are empty")
         }
 
@@ -20,7 +20,9 @@ const createUser = async(req, res) => {
             name, 
             phone, 
             emergency_phone, 
-            address
+            address,
+            age,
+            condition
         })
 
         const result = await newUser.save();
@@ -35,7 +37,9 @@ const createUser = async(req, res) => {
             phone: result.phone,
             emergency_phone: result.emergency_phone,
             address: result.address,
-            status: result.status
+            status: result.status,
+            age: result.age,
+            condition: result.condition
         }
         res.status(201).send({message: "User created succesfully", user: sendUser});
     }catch(error){
@@ -73,12 +77,12 @@ const editUser = async(req, res) => {
             return res.status(400).send("User ID is required")
         }
 
-        const { name, phone, emergency_phone, address, status } =  req.body;
-        if(!name || !phone || !emergency_phone || !address || !status ){
+        const { name, phone, emergency_phone, address, status, age, condition } =  req.body;
+        if(!name || !phone || !emergency_phone || !address || !status || !age || !condition ){
             return res.status(400).send("Bad request, some fields are empty")
         }
 
-        const updatedUser = await User.findByIdAndUpdate(id, { name, phone, emergency_phone, address, status })
+        const updatedUser = await User.findByIdAndUpdate(id, { name, phone, emergency_phone, address, status, age, condition })
         if(!updatedUser){
             return res.status(404).send("User not found")
         }
