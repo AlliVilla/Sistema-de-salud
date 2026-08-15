@@ -25,6 +25,7 @@ const createReport = async(req, res) => {
         }
         res.status(201).send({message: "Report created succesfully", report: sendReport});
     }catch(error){
+        console.error("ERROR CREATING REPORT:", error);
         return res.status(500).send("Internal server error")
     }
 }   
@@ -33,10 +34,11 @@ const getReports = async(req, res) => {
     try{
         const reports = await Report.find()
         if(reports.length === 0){
-            return res.status(404).send("Users not found")
+            return res.status(404).send("Reports not found")
         }
         return res.status(200).send({reports})
     }catch(error){
+        console.error("ERROR FETCHING REPORTS:", error);
         return res.status(500).send("Internal server error")
     }
 }
@@ -44,15 +46,13 @@ const getReports = async(req, res) => {
 const getReport = async(req, res) => {
     try{
         const { id } = req.params
-        if(!id){
-            return res.status(400).send("Bad request, some fields are empty")
-        }
         const findReport = await Report.findById(id)
         if(!findReport){
-            return res.status(404).send("User not found")
+            return res.status(404).send("Report not found")
         }
         return res.status(200).send({findReport})
     }catch(error){
+        console.error("ERROR FETCHING REPORT:", error);
         return res.status(500).send("Internal server error")
     }
 }

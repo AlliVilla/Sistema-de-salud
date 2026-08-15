@@ -1,5 +1,6 @@
 import User from "../models/users.js"
 import bycrypt from 'bcryptjs'
+import { signToken } from "../middlewares/auth.middleware.js"
 
 const createUser = async(req, res) => {
     try{
@@ -43,6 +44,7 @@ const createUser = async(req, res) => {
         }
         res.status(201).send({message: "User created succesfully", user: sendUser});
     }catch(error){
+        console.error("ERROR CREATING USER:", error);
         return res.status(500).send("Internal server error")
     }
 }
@@ -59,13 +61,19 @@ const validateUser = async(req, res) => {
             return res.status(404).send({ message: "User not found", result: false})
         }
 
+        if(findUser.status === false){
+            return res.status(403).send({ message: "User is inactive", result: false})
+        }
+
         const result = await bycrypt.compare(password, findUser.password)
         if(!result){
             return res.status(404).send({ message: "Incorrect password", result: false})
         }
 
-        res.status(200).send({message: "User found succesfully", email: findUser.email, result: true});
+        const token = signToken({ sub: findUser._id.toString(), email: findUser.email })
+        res.status(200).send({message: "User found succesfully", email: findUser.email, token, result: true});
     }catch(error){
+        console.error("ERROR VALIDATING USER:", error);
         return res.status(500).send({message: "Internal server error", result: false})
     }
 }
@@ -78,29 +86,36 @@ const editUser = async(req, res) => {
         }
 
         const { name, phone, emergency_phone, address, status, age, condition } =  req.body;
-        if(!name || !phone || !emergency_phone || !address || !status || !age || !condition ){
-            return res.status(400).send("Bad request, some fields are empty")
+        const fields = { name, phone, emergency_phone, address, status, age, condition };
+        const update = Object.fromEntries(
+            Object.entries(fields).filter(([, value]) => value !== undefined)
+        );
+
+        if(Object.keys(update).length === 0){
+            return res.status(400).send("Bad request, no fields to update")
         }
 
-        const updatedUser = await User.findByIdAndUpdate(id, { name, phone, emergency_phone, address, status, age, condition })
+        const updatedUser = await User.findByIdAndUpdate(id, update, { new: true, runValidators: true })
         if(!updatedUser){
             return res.status(404).send("User not found")
         }
 
-        res.status(200).send("User updated succesfully");
+        res.status(200).send({message: "User updated succesfully", user: updatedUser});
     }catch(error){
+        console.error("ERROR UPDATING USER:", error);
         return res.status(500).send("Internal server error")
     }
 }
 
 const getUsers = async(req, res) => {
     try{
-        const users = await User.find()
+        const users = await User.find().select('-password')
         if(users.length === 0){
             return res.status(404).send("Users not found")
         }
         return res.status(200).send({users})
     }catch(error){
+        console.error("ERROR FETCHING USERS:", error);
         return res.status(500).send("Internal server error")
     }
 }
