@@ -101,7 +101,7 @@ export default function RegistroPaciente() {
         }}
       >
         <button
-          onClick={() => navigate('/dashboard')}
+          onClick={() => navigate('/login')}
           style={{
             width: '100%',
             background: theme.colors.teal,
