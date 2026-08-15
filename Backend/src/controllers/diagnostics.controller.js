@@ -13,7 +13,7 @@ const createDiagnostic = async(req, res) => {
             return res.status(404).send("Report not found")
         }
 
-        const newDiagnostic = new Report({ report_id, hash, description })
+        const newDiagnostic = new Diagnostic({ report_id, hash, description })
 
         const result = await newDiagnostic.save()
 
