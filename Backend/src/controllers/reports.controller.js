@@ -33,7 +33,7 @@ const getReports = async(req, res) => {
     try{
         const reports = await Report.find()
         if(reports.length === 0){
-            return res.status(404).send("Users not found")
+            return res.status(404).send("Reports not found")
         }
         return res.status(200).send({reports})
     }catch(error){
@@ -49,7 +49,7 @@ const getReport = async(req, res) => {
         }
         const findReport = await Report.findById(id)
         if(!findReport){
-            return res.status(404).send("User not found")
+            return res.status(404).send("Report not found")
         }
         return res.status(200).send({findReport})
     }catch(error){
