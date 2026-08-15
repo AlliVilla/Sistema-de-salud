@@ -44,7 +44,7 @@ const users = new mongoose.Schema({
         type: Number,
         required: [true, 'La edad es requerida.'],
         min: [0, 'La edad no puede ser negativa.'],
-        max: [130, 'La edad no es válida.']
+        max: [90, 'La edad no es válida.']
     },
     condition: {
         type: String,

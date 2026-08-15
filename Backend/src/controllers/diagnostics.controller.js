@@ -1,16 +1,25 @@
 import Diagnostic from "../models/diagnostics.js"
 import Report from "../models/reports.js"
+import { mapMongoError } from "../utils/errors.js"
+
+// Los diagnósticos solo son accesibles para el dueño del reporte asociado.
+// Si el report_id pertenece a otro usuario, la operación devuelve 404.
+
+async function getOwnedReportIds(userId) {
+    const reports = await Report.find({ user_id: userId }).select("_id");
+    return reports.map((r) => r._id);
+}
 
 const createDiagnostic = async(req, res) => {
     try{
         const { report_id, hash, description } = req.body;
         if(!report_id || !hash || !description ){
-            return res.status(400).send("Bad request, some fields are empty")
+            return res.status(400).send({ message: "Bad request, some fields are empty", result: false })
         }
 
-        const reportFound = await Report.findById(report_id);
+        const reportFound = await Report.findOne({ _id: report_id, user_id: req.user.id });
         if(!reportFound){
-            return res.status(404).send("Report not found")
+            return res.status(404).send({ message: "Report not found", result: false })
         }
 
         const newDiagnostic = new Diagnostic({ report_id, hash, description })
@@ -26,34 +35,39 @@ const createDiagnostic = async(req, res) => {
         res.status(201).send({message: "Diagnostic created succesfully", diagnostic: sendDiagnostic});
     }catch(error){
         console.error("ERROR CREATING DIAGNOSTIC:", error);
-        return res.status(500).send("Internal server error")
+        const { status, message } = mapMongoError(error);
+        return res.status(status).send({ message, result: false })
     }
 }   
 
 const getDiagnostics = async(req, res) => {
     try{
-        const diagnostics = await Diagnostic.find()
+        const reportIds = await getOwnedReportIds(req.user.id);
+        const diagnostics = await Diagnostic.find({ report_id: { $in: reportIds } })
         if(diagnostics.length === 0){
-            return res.status(404).send("Diagnostics not found")
+            return res.status(404).send({ message: "Diagnostics not found", result: false })
         }
         return res.status(200).send({diagnostics})
     }catch(error){
         console.error("ERROR FETCHING DIAGNOSTICS:", error);
-        return res.status(500).send("Internal server error")
+        const { status, message } = mapMongoError(error);
+        return res.status(status).send({ message, result: false })
     }
 }
 
 const getDiagnostic = async(req, res) => {
     try{
         const { id } = req.params
-        const findDiagnostic = await Diagnostic.findById(id)
+        const reportIds = await getOwnedReportIds(req.user.id);
+        const findDiagnostic = await Diagnostic.findOne({ _id: id, report_id: { $in: reportIds } })
         if(!findDiagnostic){
-            return res.status(404).send("Diagnostic not found")
+            return res.status(404).send({ message: "Diagnostic not found", result: false })
         }
         return res.status(200).send({findDiagnostic})
     }catch(error){
         console.error("ERROR FETCHING DIAGNOSTIC:", error);
-        return res.status(500).send("Internal server error")
+        const { status, message } = mapMongoError(error);
+        return res.status(status).send({ message, result: false })
     }
 }
 
