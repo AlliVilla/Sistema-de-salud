@@ -11,7 +11,7 @@ const diagnostics = new mongoose.Schema({
         required: [true, 'La ritmo cardiaco es requerido.']
     },
     description: {
-        type: Text,
+        type: String,
         required: [true, 'La temperatura es requerida.']
     }
 },{
