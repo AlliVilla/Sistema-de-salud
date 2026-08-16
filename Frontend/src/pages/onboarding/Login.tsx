@@ -2,17 +2,21 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import EcgLine from '../../components/charts/EcgLine'
 import { theme } from '../../theme'
+import { loginUser } from '../../lib/api/users'
 import type { BluetoothState } from '../../lib/bluetooth'
 
 interface LoginProps {
   btState: BluetoothState
 }
 
+const TOKEN_KEY = 'vitacare_token'
+
 export default function Login({ btState }: LoginProps) {
   const navigate = useNavigate()
   const [correo, setCorreo] = useState('')
   const [contrasena, setContrasena] = useState('')
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const inputStyle: React.CSSProperties = {
     width: '100%',
@@ -36,12 +40,24 @@ export default function Login({ btState }: LoginProps) {
     marginBottom: 6,
   }
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
+    const trimmed = correo.trim()
+    if (!trimmed || !contrasena) {
+      setError('Ingresa tu correo y contraseña.')
+      return
+    }
+
     setLoading(true)
-    setTimeout(() => {
-      setLoading(false)
+    setError(null)
+    try {
+      const { token } = await loginUser(trimmed, contrasena)
+      localStorage.setItem(TOKEN_KEY, token)
       navigate(btState === 'connected' ? '/dashboard' : '/vincular')
-    }, 900)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'No se pudo iniciar sesión. Intenta de nuevo.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -76,6 +92,21 @@ export default function Login({ btState }: LoginProps) {
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {error && (
+            <div
+              style={{
+                padding: '12px 14px',
+                borderRadius: theme.radius.input,
+                background: 'rgba(244,63,94,0.08)',
+                border: '1px solid rgba(244,63,94,0.35)',
+                color: '#F87171',
+                fontSize: 13,
+                lineHeight: 1.5,
+              }}
+            >
+              {error}
+            </div>
+          )}
           <div>
             <span style={labelStyle}>Correo electrónico</span>
             <input
