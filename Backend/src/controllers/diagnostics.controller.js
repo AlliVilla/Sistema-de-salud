@@ -1,5 +1,7 @@
+import mongoose from "mongoose"
 import Diagnostic from "../models/diagnostics.js"
 import Report from "../models/reports.js"
+import ollamaService from "../services/ollama.service.js"
 
 const createDiagnostic = async(req, res) => {
     try{
@@ -56,4 +58,58 @@ const getDiagnostic = async(req, res) => {
     }
 }
 
-export default { createDiagnostic, getDiagnostic, getDiagnostics }
+const generate = async(req, res) => {
+    try{
+        const { report_id } = req.params
+        if(!mongoose.Types.ObjectId.isValid(report_id)){
+            return res.status(400).send("Bad request, invalid report id")
+        }
+
+        const reportFound = await Report.findById(report_id)
+        if(!reportFound){
+            return res.status(404).send("Report not found")
+        }
+
+        const existing = await Diagnostic.findOne({ report_id })
+        if(existing){
+            const sendExisting = {
+                id: existing._id,
+                report_id: existing.report_id,
+                description: existing.description
+            }
+            return res.status(200).send({message: "Diagnostic already exists", diagnostic: sendExisting})
+        }
+
+        const result = await ollamaService.generateDiagnostic(reportFound)
+        if(!result.anomaly){
+            return res.status(200).send({message: "No anomaly detected", diagnostic: null})
+        }
+
+        const newDiagnostic = new Diagnostic({
+            report_id: reportFound._id,
+            hash: result.hash,
+            description: result.description
+        })
+
+        const saved = await newDiagnostic.save()
+
+        const sendDiagnostic = {
+            id: saved._id,
+            report_id: saved.report_id,
+            description: saved.description
+        }
+        return res.status(201).send({message: "Diagnostic created succesfully", diagnostic: sendDiagnostic});
+    }catch(error){
+        console.error("ERROR GENERATING DIAGNOSTIC:", error)
+
+        if(error.name === "TimeoutError" || error.name === "AbortError"){
+            return res.status(504).send("AI service timeout")
+        }
+        if(error.cause?.code === "ECONNREFUSED"){
+            return res.status(503).send("AI service unavailable")
+        }
+        return res.status(500).send("Internal server error")
+    }
+}
+
+export default { createDiagnostic, getDiagnostic, getDiagnostics, generate }
