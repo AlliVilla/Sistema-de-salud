@@ -1,5 +1,7 @@
 import User from "../models/users.js"
 import bycrypt from 'bcryptjs'
+import crypto from "crypto"
+import transporter  from "../middlewares/email.js"
 import { signToken } from "../middlewares/auth.middleware.js"
 import { mapMongoError } from "../utils/errors.js"
 
@@ -15,6 +17,9 @@ const createUser = async(req, res) => {
             return res.status(409).send({ message: "El correo electrónico ya está en uso", result: false })
         }
 
+        const confirmationToken = crypto.randomBytes(32).toString("hex")
+        const hashedToken = crypto.createHash("sha256").update(confirmationToken).digest("hex")
+
         const hash_password = await bycrypt.hash(password, 10)
         const newUser = new User({
             email, 
@@ -24,7 +29,9 @@ const createUser = async(req, res) => {
             emergency_phone, 
             address,
             age,
-            condition
+            condition,
+            emailConfirmationToken: hashedToken,
+            emailConfirmationExpires: Date.now()+15*60*1000
         })
 
         const result = await newUser.save();
@@ -43,6 +50,32 @@ const createUser = async(req, res) => {
             age: result.age,
             condition: result.condition
         }
+
+        await transporter.sendMail({
+            from: `"Grupo 4 Vanguardia" <${process.env.EMAIL_USER}>`,
+            to: email,
+            subject: "Confirma tu correo electrónico",
+            html: `
+                <h2>Bienvenido a Falta el nombre aqui</h2>
+
+                <p>
+                    Tu cuenta ha sido creada correctamente.
+                </p>
+
+                <h1>
+                    ${confirmationToken}
+                </h1>
+
+                <p>
+                    Este es tu token para confirmar tu correo electrónico.
+                </p>
+
+                <p>
+                    Este token expirará en 15 minutos.
+                </p>
+            `
+        });
+
         res.status(201).send({message: "Usuario creado correctamente", user: sendUser});
     }catch(error){
         console.error("ERROR CREATING USER:", error);
@@ -62,7 +95,7 @@ const validateUser = async(req, res) => {
 
         // Misma respuesta para "no existe", "inactivo" y "contraseña incorrecta"
         // para evitar la enumeración de cuentas por el código de estado.
-        if(!findUser || findUser.status === false){
+        if(!findUser || findUser.status === false || !findUser.emailConfirmation){
             return res.status(401).send({ message: "Correo o contraseña incorrectos", result: false })
         }
 
@@ -129,4 +162,35 @@ const getUsers = async(req, res) => {
     }
 }
 
-export default { createUser, validateUser, editUser, getUsers };
+const confirmEmail = async(req, res) => {
+    try{
+        const { token } = req.params;
+        if(!token ){
+            return res.status(400).send({ message: "El token de verificacion es requerido", result: false })
+        }
+
+        const hashedToken = crypto.createHash("sha256").update(token).digest("hex")
+        
+        const findUser = await User.findOne({ 
+            emailConfirmationToken: hashedToken, 
+            emailConfirmationExpires: { $gt: Date.now() }
+        })
+        if(!findUser){
+            return res.status(404).send({ message: "La verificacion a fallado", result: false })
+        }
+
+        await User.findByIdAndUpdate(findUser._id, { 
+            emailConfirmation: true, 
+            emailConfirmationToken: null,
+            emailConfirmationExpires: null
+        })
+
+        return res.status(200).send({ message: "Email validado con exito", result: true })
+    }catch(error){
+        console.error("ERROR CONFIRMIR USER'S EMAIL:", error);
+        const { status, message } = mapMongoError(error);
+        return res.status(status).send({ message, result: false })
+    }
+}
+
+export default { createUser, validateUser, editUser, getUsers, confirmEmail };

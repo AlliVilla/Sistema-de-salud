@@ -50,6 +50,18 @@ const users = new mongoose.Schema({
         type: String,
         required: [true, 'Su condicion es requerida.'],
         trim: true
+    },
+    emailConfirmation: {
+        type: Boolean,
+        default: false
+    },
+    emailConfirmationToken: {
+        type: String,
+        default: null
+    },
+    emailConfirmationExpires: {
+        type: Date,
+        default: null
     }
 },{
     timestamps: true
