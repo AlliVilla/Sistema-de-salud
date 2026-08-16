@@ -1,17 +1,24 @@
 import User from "../models/users.js"
 import bycrypt from 'bcryptjs'
+import crypto from "crypto"
+import transporter  from "../middlewares/email.js"
+import { signToken } from "../middlewares/auth.middleware.js"
+import { mapMongoError } from "../utils/errors.js"
 
 const createUser = async(req, res) => {
     try{
         const { email, password, name, phone, emergency_phone, address, age, condition } =  req.body;
         if(!email || !password || !name || !phone || !emergency_phone || !address || !age || !condition ){
-            return res.status(400).send("Bad request, some fields are empty")
+            return res.status(400).send({ message: "Faltan campos obligatorios", result: false })
         }
 
         const findEmail = await User.findOne({ email })
         if(findEmail){
-            return res.status(409).send("Resource already exists, email already in use")
+            return res.status(409).send({ message: "El correo electrónico ya está en uso", result: false })
         }
+
+        const confirmationToken = crypto.randomBytes(32).toString("hex")
+        const hashedToken = crypto.createHash("sha256").update(confirmationToken).digest("hex")
 
         const hash_password = await bycrypt.hash(password, 10)
         const newUser = new User({
@@ -22,12 +29,14 @@ const createUser = async(req, res) => {
             emergency_phone, 
             address,
             age,
-            condition
+            condition,
+            emailConfirmationToken: hashedToken,
+            emailConfirmationExpires: Date.now()+15*60*1000
         })
 
         const result = await newUser.save();
         if(!result){
-            return res.status(400).send("User creation failed")
+            return res.status(400).send({ message: "No se pudo crear el usuario", result: false })
         }
 
         const sendUser = {
@@ -41,9 +50,37 @@ const createUser = async(req, res) => {
             age: result.age,
             condition: result.condition
         }
-        res.status(201).send({message: "User created succesfully", user: sendUser});
+
+        await transporter.sendMail({
+            from: `"Grupo 4 Vanguardia" <${process.env.EMAIL_USER}>`,
+            to: email,
+            subject: "Confirma tu correo electrónico",
+            html: `
+                <h2>Bienvenido a Falta el nombre aqui</h2>
+
+                <p>
+                    Tu cuenta ha sido creada correctamente.
+                </p>
+
+                <h1>
+                    ${confirmationToken}
+                </h1>
+
+                <p>
+                    Este es tu token para confirmar tu correo electrónico.
+                </p>
+
+                <p>
+                    Este token expirará en 15 minutos.
+                </p>
+            `
+        });
+
+        res.status(201).send({message: "Usuario creado correctamente", user: sendUser});
     }catch(error){
-        return res.status(500).send("Internal server error")
+        console.error("ERROR CREATING USER:", error);
+        const { status, message } = mapMongoError(error);
+        return res.status(status).send({ message, result: false })
     }
 }
 
@@ -51,22 +88,28 @@ const validateUser = async(req, res) => {
     try{
         const { email, password } =  req.body;
         if(!email || !password ){
-            return res.status(400).send({message: "Bad request, some fields are empty", result: false})
+            return res.status(400).send({ message: "Faltan campos obligatorios", result: false })
         }
 
         const findUser = await User.findOne({ email })
-        if(!findUser){
-            return res.status(404).send({ message: "User not found", result: false})
+
+        // Misma respuesta para "no existe", "inactivo" y "contraseña incorrecta"
+        // para evitar la enumeración de cuentas por el código de estado.
+        if(!findUser || findUser.status === false || !findUser.emailConfirmation){
+            return res.status(401).send({ message: "Correo o contraseña incorrectos", result: false })
         }
 
         const result = await bycrypt.compare(password, findUser.password)
         if(!result){
-            return res.status(404).send({ message: "Incorrect password", result: false})
+            return res.status(401).send({ message: "Correo o contraseña incorrectos", result: false })
         }
 
-        res.status(200).send({message: "User found succesfully", email: findUser.email, result: true});
+        const token = signToken({ sub: findUser._id.toString(), email: findUser.email })
+        res.status(200).send({message: "Usuario validado correctamente", email: findUser.email, token, result: true});
     }catch(error){
-        return res.status(500).send({message: "Internal server error", result: false})
+        console.error("ERROR VALIDATING USER:", error);
+        const { status, message } = mapMongoError(error);
+        return res.status(status).send({ message, result: false })
     }
 }
 
@@ -74,35 +117,80 @@ const editUser = async(req, res) => {
     try{
         const { id } =  req.params;
         if(!id ){
-            return res.status(400).send("User ID is required")
+            return res.status(400).send({ message: "El ID del usuario es requerido", result: false })
+        }
+
+        // Un usuario solo puede editar su propio perfil.
+        if(id !== req.user.id){
+            return res.status(403).send({ message: "No tienes permiso para modificar este usuario", result: false })
         }
 
         const { name, phone, emergency_phone, address, status, age, condition } =  req.body;
-        if(!name || !phone || !emergency_phone || !address || !status || !age || !condition ){
-            return res.status(400).send("Bad request, some fields are empty")
+        const fields = { name, phone, emergency_phone, address, status, age, condition };
+        const update = Object.fromEntries(
+            Object.entries(fields).filter(([, value]) => value !== undefined)
+        );
+
+        if(Object.keys(update).length === 0){
+            return res.status(400).send({ message: "No hay campos para actualizar", result: false })
         }
 
-        const updatedUser = await User.findByIdAndUpdate(id, { name, phone, emergency_phone, address, status, age, condition })
+        const updatedUser = await User.findByIdAndUpdate(id, update, { new: true, runValidators: true })
         if(!updatedUser){
-            return res.status(404).send("User not found")
+            return res.status(404).send({ message: "Usuario no encontrado", result: false })
         }
 
-        res.status(200).send("User updated succesfully");
+        res.status(200).send({message: "Usuario actualizado correctamente", user: updatedUser});
     }catch(error){
-        return res.status(500).send("Internal server error")
+        console.error("ERROR UPDATING USER:", error);
+        const { status, message } = mapMongoError(error);
+        return res.status(status).send({ message, result: false })
     }
 }
 
 const getUsers = async(req, res) => {
     try{
-        const users = await User.find()
+        const users = await User.find().select('-password')
         if(users.length === 0){
-            return res.status(404).send("Users not found")
+            return res.status(404).send({ message: "No se encontraron usuarios", result: false })
         }
         return res.status(200).send({users})
     }catch(error){
-        return res.status(500).send("Internal server error")
+        console.error("ERROR FETCHING USERS:", error);
+        const { status, message } = mapMongoError(error);
+        return res.status(status).send({ message, result: false })
     }
 }
 
-export default { createUser, validateUser, editUser, getUsers };
+const confirmEmail = async(req, res) => {
+    try{
+        const { token } = req.params;
+        if(!token ){
+            return res.status(400).send({ message: "El token de verificacion es requerido", result: false })
+        }
+
+        const hashedToken = crypto.createHash("sha256").update(token).digest("hex")
+        
+        const findUser = await User.findOne({ 
+            emailConfirmationToken: hashedToken, 
+            emailConfirmationExpires: { $gt: Date.now() }
+        })
+        if(!findUser){
+            return res.status(404).send({ message: "La verificacion a fallado", result: false })
+        }
+
+        await User.findByIdAndUpdate(findUser._id, { 
+            emailConfirmation: true, 
+            emailConfirmationToken: null,
+            emailConfirmationExpires: null
+        })
+
+        return res.status(200).send({ message: "Email validado con exito", result: true })
+    }catch(error){
+        console.error("ERROR CONFIRMIR USER'S EMAIL:", error);
+        const { status, message } = mapMongoError(error);
+        return res.status(status).send({ message, result: false })
+    }
+}
+
+export default { createUser, validateUser, editUser, getUsers, confirmEmail };

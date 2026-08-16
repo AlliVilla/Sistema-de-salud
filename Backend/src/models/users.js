@@ -42,12 +42,26 @@ const users = new mongoose.Schema({
     },
     age: {
         type: Number,
-        required: [true, 'La edad es requerida.']
+        required: [true, 'La edad es requerida.'],
+        min: [0, 'La edad no puede ser negativa.'],
+        max: [90, 'La edad no es válida.']
     },
     condition: {
         type: String,
         required: [true, 'Su condicion es requerida.'],
         trim: true
+    },
+    emailConfirmation: {
+        type: Boolean,
+        default: false
+    },
+    emailConfirmationToken: {
+        type: String,
+        default: null
+    },
+    emailConfirmationExpires: {
+        type: Date,
+        default: null
     }
 },{
     timestamps: true

@@ -18,8 +18,9 @@ export interface PatientProfile {
   condicion: string
   correo: string
   contrasena: string
-  contacto: string
   telefono: string
+  direccion: string
+  emergencia: string
 }
 
 export interface VitalsReading {

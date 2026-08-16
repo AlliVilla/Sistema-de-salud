@@ -8,11 +8,11 @@ const diagnostics = new mongoose.Schema({
     },
     hash: {
         type: String,
-        required: [true, 'La ritmo cardiaco es requerido.']
+        required: [true, 'El hash es requerido.']
     },
     description: {
         type: String,
-        required: [true, 'La temperatura es requerida.']
+        required: [true, 'La descripción es requerida.']
     }
 },{
     timestamps: false

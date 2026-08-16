@@ -1,7 +1,9 @@
-// Canonical route map of the future FastAPI backend. Keep it in sync with the
+// Canonical route map of the Express backend. Keep it in sync with the
 // backend implementation so the frontend never hard-codes URLs.
 export const ENDPOINTS = {
   health: '/health',
+  register: '/user/create',
+  login: '/user/validate',
   vitals: '/api/vitals/latest',
   alerts: '/api/alerts',
   alertsReview: (id: string) => `/api/alerts/${id}/review`,
