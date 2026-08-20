@@ -8,6 +8,7 @@ import Dashboard from './pages/Dashboard'
 import Alertas from './pages/Alertas'
 import Blockchain from './pages/Blockchain'
 import Perfil from './pages/Perfil'
+import Confirmar from './pages/onboarding/ConfirmarEmail'
 import { useBluetooth } from './lib/bluetooth'
 
 export default function App() {
@@ -44,6 +45,7 @@ export default function App() {
           <Route path="/alertas" element={<Alertas />} />
           <Route path="/historial" element={<Blockchain />} />
           <Route path="/perfil" element={<Perfil />} />
+          <Route path='/confirmar' element={<Confirmar/>}/>
         </Route>
       </Routes>
     </BrowserRouter>
