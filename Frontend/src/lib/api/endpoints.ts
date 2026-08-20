@@ -4,6 +4,7 @@ export const ENDPOINTS = {
   health: '/health',
   register: '/user/create',
   login: '/user/validate',
+  confirm: (token: string) => `/user/confirm-email/${token}`,
   vitals: '/api/vitals/latest',
   alerts: '/api/alerts',
   alertsReview: (id: string) => `/api/alerts/${id}/review`,

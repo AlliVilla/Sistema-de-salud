@@ -14,7 +14,52 @@ const createUser = async(req, res) => {
 
         const findEmail = await User.findOne({ email })
         if(findEmail){
-            return res.status(409).send({ message: "El correo electrónico ya está en uso", result: false })
+            if(findEmail.emailConfirmation){
+                return res.status(409).send({ message: "El correo electrónico ya está en uso", result: false })
+            }
+
+            const confirmationToken = crypto.randomBytes(32).toString("hex")
+            const hashedToken = crypto.createHash("sha256").update(confirmationToken).digest("hex")
+            const hash_password = await bycrypt.hash(password, 10)
+
+            await User.findByIdAndUpdate(findEmail._id, {
+                password: hash_password, 
+                name, 
+                phone, 
+                emergency_phone, 
+                address,
+                age,
+                condition,
+                emailConfirmationToken: hashedToken,
+                emailConfirmationExpires: Date.now()+15*60*1000
+            })
+
+            await transporter.sendMail({
+                from: `"Grupo 4 Vanguardia" <${process.env.EMAIL_USER}>`,
+                to: email,
+                subject: "Confirma tu correo electrónico",
+                html: `
+                    <h2>Bienvenido a Falta el nombre aqui</h2>
+
+                    <p>
+                        Tu cuenta ha sido creada correctamente.
+                    </p>
+
+                    <h1>
+                        ${confirmationToken}
+                    </h1>
+
+                    <p>
+                        Este es tu token para confirmar tu correo electrónico.
+                    </p>
+
+                    <p>
+                        Este token expirará en 15 minutos.
+                    </p>
+                `
+            });
+
+            return res.status(201).send({message: "Usuario creado correctamente, esperando confirmacion de email", user: sendUser});
         }
 
         const confirmationToken = crypto.randomBytes(32).toString("hex")
@@ -76,7 +121,7 @@ const createUser = async(req, res) => {
             `
         });
 
-        res.status(201).send({message: "Usuario creado correctamente", user: sendUser});
+        res.status(201).send({message: "Usuario creado correctamente, esperando confirmacion de email", user: sendUser});
     }catch(error){
         console.error("ERROR CREATING USER:", error);
         const { status, message } = mapMongoError(error);
@@ -166,7 +211,7 @@ const confirmEmail = async(req, res) => {
     try{
         const { token } = req.params;
         if(!token ){
-            return res.status(400).send({ message: "El token de verificacion es requerido", result: false })
+            return res.status(400).send({ message: "El token de verificación es requerido", result: false })
         }
 
         const hashedToken = crypto.createHash("sha256").update(token).digest("hex")

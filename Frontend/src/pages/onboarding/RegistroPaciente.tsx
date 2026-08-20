@@ -80,7 +80,7 @@ export default function RegistroPaciente() {
         age: Number(form.edad),
         condition: form.condicion,
       })
-      navigate('/login')
+      navigate('/confirmar')
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo crear la cuenta. Intenta de nuevo.')
     } finally {

@@ -39,6 +39,11 @@ interface ValidateResponse {
   result: boolean
 }
 
+interface ConfirmationResponse {
+  message: string
+  result: boolean
+}
+
 export async function registerUser(payload: RegisterPayload): Promise<UserResponse> {
   const res = await api<RegisterResponse>(ENDPOINTS.register, {
     method: 'POST',
@@ -52,4 +57,8 @@ export async function loginUser(email: string, password: string): Promise<Valida
     method: 'POST',
     body: JSON.stringify({ email, password }),
   })
+}
+
+export async function validateEmail(token: string): Promise<ConfirmationResponse>{
+  return api<ConfirmationResponse>(ENDPOINTS.confirm(token), {})
 }
