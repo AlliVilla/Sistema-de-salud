@@ -207,6 +207,21 @@ const getUsers = async(req, res) => {
     }
 }
 
+const getMe = async(req, res) => {
+    try{
+        const user = await User.findById(req.user.id)
+            .select('-password -emailConfirmationToken -emailConfirmationExpires')
+        if(!user){
+            return res.status(404).send({ message: "Usuario no encontrado", result: false })
+        }
+        return res.status(200).send({user})
+    }catch(error){
+        console.error("ERROR FETCHING PROFILE:", error);
+        const { status, message } = mapMongoError(error);
+        return res.status(status).send({ message, result: false })
+    }
+}
+
 const confirmEmail = async(req, res) => {
     try{
         const { token } = req.params;
@@ -238,4 +253,4 @@ const confirmEmail = async(req, res) => {
     }
 }
 
-export default { createUser, validateUser, editUser, getUsers, confirmEmail };
+export default { createUser, validateUser, editUser, getUsers, getMe, confirmEmail };

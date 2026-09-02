@@ -36,14 +36,27 @@ async function readErrorMessage(res: Response): Promise<string> {
 }
 
 export async function api<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const token = getToken()
+
   let res: Response
   try {
     res = await fetch(`${API_BASE_URL}${path}`, {
-      headers: { 'Content-Type': 'application/json', ...(options.headers ?? {}) },
       ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(options.headers ?? {}),
+      },
     })
   } catch {
     throw new ApiError(`No se pudo conectar con el backend en ${API_BASE_URL}`, 0)
+  }
+
+  if (res.status === 401 && token) {
+    clearSession()
+    if (window.location.pathname !== '/login') {
+      window.location.assign('/login')
+    }
   }
 
   if (!res.ok) {

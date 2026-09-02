@@ -10,7 +10,7 @@
  * /user:
  *   get:
  *     summary: Obtener todos los usuarios
- *     description: Obtiene la lista de todos los usuarios registrados.
+ *     description: Obtiene la lista de todos los usuarios registrados, sin la contraseña.
  *     tags: [Users]
  *     security:
  *       - bearerAuth: []
@@ -30,6 +30,36 @@
  *         description: Usuario no autorizado.
  *       404:
  *         description: No se encontraron usuarios.
+ *       500:
+ *         description: Error interno del servidor.
+ */
+
+/**
+ * @swagger
+ * /user/me:
+ *   get:
+ *     summary: Obtener el perfil propio
+ *     description: >
+ *       Devuelve el perfil del usuario dueño del token, sin la contraseña ni los campos
+ *       de confirmación de correo. No recibe ID: el usuario sale del token, así que
+ *       nadie puede pedir el perfil de otra cuenta por esta ruta.
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Perfil obtenido correctamente.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 user:
+ *                   type: object
+ *       401:
+ *         description: Usuario no autorizado.
+ *       404:
+ *         description: Usuario no encontrado.
  *       500:
  *         description: Error interno del servidor.
  */
@@ -67,6 +97,8 @@
  *         description: El token de verificación es requerido.
  *       404:
  *         description: La verificación falló. El token puede ser inválido o haber expirado.
+ *       429:
+ *         description: Demasiados intentos de confirmación. Límite de 20 cada 15 minutos por IP.
  *       500:
  *         description: Error interno del servidor.
  */
@@ -123,6 +155,8 @@
  *         description: Faltan campos obligatorios.
  *       401:
  *         description: Correo o contraseña incorrectos.
+ *       429:
+ *         description: Demasiados intentos fallidos. Límite de 10 cada 15 minutos por IP.
  *       500:
  *         description: Error interno del servidor.
  */
@@ -201,6 +235,8 @@
  *         description: Faltan campos obligatorios o no se pudo crear el usuario.
  *       409:
  *         description: El correo electrónico ya está en uso.
+ *       429:
+ *         description: Demasiados registros desde esta IP. Límite de 5 por hora.
  *       500:
  *         description: Error interno del servidor.
  */
@@ -275,13 +311,15 @@
 
 import usersController from "../controllers/users.controller.js";
 import authMiddleware from "../middlewares/auth.middleware.js";
+import { loginLimiter, createAccountLimiter, confirmEmailLimiter } from "../middlewares/rateLimit.middleware.js";
 import express from "express";
 const router = express.Router();
 
 router.get('/', authMiddleware, usersController.getUsers);
-router.get('/confirm-email/:token', usersController.confirmEmail);
-router.post('/validate', usersController.validateUser);
-router.post('/create', usersController.createUser);
+router.get('/me', authMiddleware, usersController.getMe);
+router.get('/confirm-email/:token', confirmEmailLimiter, usersController.confirmEmail);
+router.post('/validate', loginLimiter, usersController.validateUser);
+router.post('/create', createAccountLimiter, usersController.createUser);
 router.patch('/update/:id', authMiddleware, usersController.editUser);
 
 export default router;
