@@ -12,6 +12,7 @@ import Blockchain from './pages/Blockchain'
 import Perfil from './pages/Perfil'
 import Confirmar from './pages/onboarding/ConfirmarEmail'
 import AdminPanel from './pages/AdminPanel'
+import PWAInstallPrompt from './components/shared/PWAInstallPrompt'
 import { useBluetooth } from './lib/bluetooth'
 
 export default function App() {
@@ -62,6 +63,7 @@ export default function App() {
           </Route>
         </Route>
       </Routes>
+      <PWAInstallPrompt />
     </BrowserRouter>
   )
 }

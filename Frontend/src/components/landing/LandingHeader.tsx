@@ -13,11 +13,12 @@ export default function LandingHeader({ onLogin }: LandingHeaderProps) {
     <header
       style={{
         position: 'sticky',
-        top: 0,
+        top: 'env(safe-area-inset-top)',
         zIndex: 50,
         background: 'rgba(10,22,24,0.85)',
         backdropFilter: 'blur(12px)',
         borderBottom: `1px solid ${theme.colors.borderSubtle}`,
+        paddingTop: 'env(safe-area-inset-top)',
       }}
     >
       <div

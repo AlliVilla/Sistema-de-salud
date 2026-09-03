@@ -72,6 +72,30 @@ export default function Login({ btState }: LoginProps) {
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <EcgLine color={theme.colors.teal} />
       <div style={{ flex: 1, display: 'flex', flexDirection: 'column', padding: '20px 24px 32px' }}>
+        <button
+          onClick={() => navigate(-1)}
+          aria-label="Volver"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            alignSelf: 'flex-start',
+            background: 'none',
+            border: 'none',
+            color: theme.colors.muted,
+            fontFamily: "'Inter', sans-serif",
+            fontSize: 13,
+            cursor: 'pointer',
+            padding: 0,
+            marginBottom: 8,
+          }}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M19 12H5" />
+            <path d="M12 19l-7-7 7-7" />
+          </svg>
+          Volver
+        </button>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginTop: 28, marginBottom: 32 }}>
           <div
             style={{

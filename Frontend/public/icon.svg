@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0E2327"/>
+      <stop offset="100%" stop-color="#060E10"/>
+    </linearGradient>
+    <linearGradient id="tealGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2DD4BF"/>
+      <stop offset="100%" stop-color="#0D9488"/>
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="8" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+  
+  <!-- Background rounded box -->
+  <rect width="512" height="512" rx="112" fill="url(#bgGrad)"/>
+  <rect width="504" height="504" x="4" y="4" rx="108" fill="none" stroke="#2DD4BF" stroke-opacity="0.25" stroke-width="6"/>
+
+  <!-- Pulse / Heart Circle Background -->
+  <circle cx="256" cy="256" r="150" fill="#101F22" stroke="#1A2E32" stroke-width="4"/>
+
+  <!-- Medical Cross / Shield background glow -->
+  <path d="M256 120 C 330 120, 370 170, 370 230 C 370 310, 270 375, 256 385 C 242 375, 142 310, 142 230 C 142 170, 182 120, 256 120 Z" 
+        fill="#17282C" stroke="#283E42" stroke-width="6"/>
+
+  <!-- Heartbeat ECG Line -->
+  <path d="M165 250 L 210 250 L 225 210 L 245 295 L 265 180 L 285 305 L 300 250 L 345 250" 
+        fill="none" stroke="url(#tealGrad)" stroke-width="14" stroke-linecap="round" stroke-linejoin="round" filter="url(#glow)"/>
+
+  <!-- Live Pulse Dot -->
+  <circle cx="345" cy="250" r="8" fill="#2DD4BF" filter="url(#glow)"/>
+</svg>

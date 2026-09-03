@@ -113,6 +113,29 @@ export default function RegistroPaciente() {
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <EcgLine color={theme.colors.teal} />
       <div style={{ flex: 1, overflow: 'auto', padding: '20px 24px 32px' }}>
+        <button
+          onClick={() => navigate(-1)}
+          aria-label="Volver"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            background: 'none',
+            border: 'none',
+            color: theme.colors.muted,
+            fontFamily: "'Inter', sans-serif",
+            fontSize: 13,
+            cursor: 'pointer',
+            padding: 0,
+            marginBottom: 16,
+          }}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M19 12H5" />
+            <path d="M12 19l-7-7 7-7" />
+          </svg>
+          Volver
+        </button>
         <h1 className="font-display" style={{ fontSize: 22, fontWeight: 700, color: theme.colors.text, letterSpacing: '-0.02em', marginBottom: 6 }}>
           Completa tu perfil médico
         </h1>

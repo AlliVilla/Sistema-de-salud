@@ -1,6 +1,7 @@
 import { defineConfig, loadEnv, type HtmlTagDescriptor, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
+import { VitePWA } from 'vite-plugin-pwa'
 import path from 'node:path'
 
 import siteConfiguration from './.figma/make/site.json'
@@ -25,6 +26,45 @@ export default defineConfig(({ mode, command }) => {
       }),
       react(),
       tailwindcss(),
+      VitePWA({
+        registerType: 'autoUpdate',
+        includeAssets: ['favicon.png', 'icon.svg', 'apple-touch-icon.png', 'pwa-192x192.png', 'pwa-512x512.png'],
+        manifest: {
+          name: 'Sistema de Monitoreo de Salud',
+          short_name: 'SaludApp',
+          description: 'Monitoreo de signos vitales, alertas y atención médica en tiempo real.',
+          theme_color: '#0A1618',
+          background_color: '#060E10',
+          display: 'standalone',
+          orientation: 'portrait',
+          start_url: '/',
+          scope: '/',
+          icons: [
+            {
+              src: '/pwa-192x192.png',
+              sizes: '192x192',
+              type: 'image/png',
+            },
+            {
+              src: '/pwa-512x512.png',
+              sizes: '512x512',
+              type: 'image/png',
+            },
+            {
+              src: '/pwa-512x512.png',
+              sizes: '512x512',
+              type: 'image/png',
+              purpose: 'any maskable',
+            },
+            {
+              src: '/icon.svg',
+              sizes: '512x512',
+              type: 'image/svg+xml',
+              purpose: 'any maskable',
+            },
+          ],
+        },
+      }),
       figmaSiteConfiguration(siteConfiguration),
       figmaErrorOverlayReplay(),
       figmaReactRefreshBoundaryFallback(),
@@ -62,12 +102,8 @@ function contentSecurityPolicy(options: {
 }): Plugin {
   const { isDevServer, apiUrl, esp32Url } = options
 
-  const connectSrc = new Set(["'self'", apiUrl])
+  const connectSrc = new Set(["'self'", apiUrl, 'http:', 'https:', 'ws:', 'wss:'])
   if (esp32Url) connectSrc.add(esp32Url)
-  if (isDevServer) {
-    connectSrc.add('ws:')
-    connectSrc.add('wss:')
-  }
 
   const policy = [
     "default-src 'self'",

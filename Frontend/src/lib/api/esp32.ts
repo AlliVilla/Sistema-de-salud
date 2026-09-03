@@ -1,6 +1,12 @@
-import type { VitalsReading } from '../../types'
+export function getEsp32BaseUrl(): string {
+  if (import.meta.env.VITE_ESP32_URL) return import.meta.env.VITE_ESP32_URL
+  if (typeof window !== 'undefined' && window.location.hostname && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+    return `http://${window.location.hostname}:3000`
+  }
+  return 'http://localhost:3000'
+}
 
-const ESP32_BASE_URL = import.meta.env.VITE_ESP32_URL ?? 'http://localhost:3000'
+const ESP32_BASE_URL = getEsp32BaseUrl()
 
 export interface EspRawReading {
   temp: number | null
