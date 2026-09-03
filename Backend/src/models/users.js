@@ -1,5 +1,4 @@
 import mongoose from "mongoose";
-import { ENUM } from "sequelize";
 
 const users = new mongoose.Schema({
     email: {
