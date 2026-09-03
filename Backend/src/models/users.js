@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { ENUM } from "sequelize";
 
 const users = new mongoose.Schema({
     email: {
@@ -47,9 +48,14 @@ const users = new mongoose.Schema({
         max: [90, 'La edad no es válida.']
     },
     condition: {
-        type: String,
+        type: [String],
         required: [true, 'Su condicion es requerida.'],
         trim: true
+    },
+    role: {
+        type: String,
+        enum: ['Admin', 'Client'],
+        default: 'Client'
     },
     emailConfirmation: {
         type: Boolean,

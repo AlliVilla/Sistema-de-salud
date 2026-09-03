@@ -4,7 +4,7 @@ import EcgLine from '../../components/charts/EcgLine'
 import { theme } from '../../theme'
 import { loginUser } from '../../lib/api/users'
 import type { BluetoothState } from '../../lib/bluetooth'
-
+import { setToken } from '@/lib/api/client'
 interface LoginProps {
   btState: BluetoothState
 }
@@ -52,6 +52,7 @@ export default function Login({ btState }: LoginProps) {
     try {
       const { token } = await loginUser(trimmed, contrasena)
       localStorage.setItem(TOKEN_KEY, token)
+      setToken(token)
       navigate(btState === 'connected' ? '/dashboard' : '/vincular')
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo iniciar sesión. Intenta de nuevo.')

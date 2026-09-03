@@ -171,7 +171,7 @@ const editUser = async(req, res) => {
         }
 
         const { name, phone, emergency_phone, address, status, age, condition } =  req.body;
-        const fields = { name, phone, emergency_phone, address, status, age, condition };
+        const fields = { name, phone, emergency_phone, address, status, age, condition, role };
         const update = Object.fromEntries(
             Object.entries(fields).filter(([, value]) => value !== undefined)
         );
