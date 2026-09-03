@@ -15,7 +15,7 @@ export interface NavItem {
 export interface PatientProfile {
   nombre: string
   edad: string
-  condicion: string
+  condiciones: string[]
   correo: string
   contrasena: string
   telefono: string

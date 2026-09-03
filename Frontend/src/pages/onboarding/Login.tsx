@@ -1,19 +1,18 @@
 import { useState } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import EcgLine from '../../components/charts/EcgLine'
 import { theme } from '../../theme'
 import { loginUser } from '../../lib/api/users'
 import type { BluetoothState } from '../../lib/bluetooth'
-import { setToken } from '../../lib/auth'
-
+import { setToken } from '@/lib/api/client'
 interface LoginProps {
   btState: BluetoothState
 }
 
+const TOKEN_KEY = 'vitacare_token'
+
 export default function Login({ btState }: LoginProps) {
   const navigate = useNavigate()
-  const location = useLocation()
-  const from = (location.state as { from?: string } | null)?.from
   const [correo, setCorreo] = useState('')
   const [contrasena, setContrasena] = useState('')
   const [loading, setLoading] = useState(false)
@@ -52,8 +51,9 @@ export default function Login({ btState }: LoginProps) {
     setError(null)
     try {
       const { token } = await loginUser(trimmed, contrasena)
+      localStorage.setItem(TOKEN_KEY, token)
       setToken(token)
-      navigate(from ?? (btState === 'connected' ? '/dashboard' : '/vincular'), { replace: true })
+      navigate(btState === 'connected' ? '/dashboard' : '/vincular')
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo iniciar sesión. Intenta de nuevo.')
     } finally {

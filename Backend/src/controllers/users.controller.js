@@ -170,8 +170,8 @@ const editUser = async(req, res) => {
             return res.status(403).send({ message: "No tienes permiso para modificar este usuario", result: false })
         }
 
-        const { name, phone, emergency_phone, address, status, age, condition } =  req.body;
-        const fields = { name, phone, emergency_phone, address, status, age, condition };
+        const { name, phone, emergency_phone, address, status, age, condition, role } =  req.body;
+        const fields = { name, phone, emergency_phone, address, status, age, condition, role };
         const update = Object.fromEntries(
             Object.entries(fields).filter(([, value]) => value !== undefined)
         );
