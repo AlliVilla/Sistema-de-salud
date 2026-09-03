@@ -1,16 +1,22 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import EcgLine from '../../components/charts/EcgLine'
 import { theme } from '../../theme'
-
+import { loginUser } from '../../lib/api/users'
+import type { BluetoothState } from '../../lib/bluetooth'
+import { setToken } from '@/lib/api/client'
 interface LoginProps {
-  onLogin: () => void
-  onCreateAccount: () => void
+  btState: BluetoothState
 }
 
-export default function Login({ onLogin, onCreateAccount }: LoginProps) {
+const TOKEN_KEY = 'vitacare_token'
+
+export default function Login({ btState }: LoginProps) {
+  const navigate = useNavigate()
   const [correo, setCorreo] = useState('')
   const [contrasena, setContrasena] = useState('')
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const inputStyle: React.CSSProperties = {
     width: '100%',
@@ -34,12 +40,25 @@ export default function Login({ onLogin, onCreateAccount }: LoginProps) {
     marginBottom: 6,
   }
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
+    const trimmed = correo.trim()
+    if (!trimmed || !contrasena) {
+      setError('Ingresa tu correo y contraseña.')
+      return
+    }
+
     setLoading(true)
-    setTimeout(() => {
+    setError(null)
+    try {
+      const { token } = await loginUser(trimmed, contrasena)
+      localStorage.setItem(TOKEN_KEY, token)
+      setToken(token)
+      navigate(btState === 'connected' ? '/dashboard' : '/vincular')
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'No se pudo iniciar sesión. Intenta de nuevo.')
+    } finally {
       setLoading(false)
-      onLogin()
-    }, 900)
+    }
   }
 
   return (
@@ -74,6 +93,21 @@ export default function Login({ onLogin, onCreateAccount }: LoginProps) {
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {error && (
+            <div
+              style={{
+                padding: '12px 14px',
+                borderRadius: theme.radius.input,
+                background: 'rgba(244,63,94,0.08)',
+                border: '1px solid rgba(244,63,94,0.35)',
+                color: '#F87171',
+                fontSize: 13,
+                lineHeight: 1.5,
+              }}
+            >
+              {error}
+            </div>
+          )}
           <div>
             <span style={labelStyle}>Correo electrónico</span>
             <input
@@ -125,7 +159,7 @@ export default function Login({ onLogin, onCreateAccount }: LoginProps) {
         <p style={{ fontSize: 13, color: theme.colors.muted, textAlign: 'center', marginTop: 20 }}>
           ¿No tienes cuenta?{' '}
           <button
-            onClick={onCreateAccount}
+            onClick={() => navigate('/registro')}
             style={{
               background: 'none',
               border: 'none',

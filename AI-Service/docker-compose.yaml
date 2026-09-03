@@ -1,0 +1,67 @@
+services:
+  ollama:
+    image: ollama/ollama:latest
+    container_name: salud_ollama
+    restart: unless-stopped
+    # el puerto no se publica a proposito: ai-service llega por la red interna
+    # (http://ollama:11434) y asi no choca con un Ollama ya instalado en la maquina.
+    # Para depurar desde el host: docker compose exec ollama ollama list
+    expose:
+      - '11434'
+    volumes:
+      - ollama_models:/root/.ollama
+    healthcheck:
+      test: ['CMD', 'ollama', 'list']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      - ai_network
+
+  # crea el modelo custom a partir del Modelfile y termina
+  model-init:
+    image: ollama/ollama:latest
+    container_name: salud_model_init
+    depends_on:
+      ollama:
+        condition: service_healthy
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+    volumes:
+      - ./Modelfile:/Modelfile:ro
+    # el comando va como lista de UN elemento: si se pasa como string suelto,
+    # compose lo parte en palabras y 'sh -c' solo recibe la primera.
+    entrypoint: ['/bin/sh', '-c']
+    command: ['ollama pull qwen2.5:3b && ollama create mi-modelo -f /Modelfile']
+    restart: 'no'
+    networks:
+      - ai_network
+
+  ai-service:
+    build: .
+    container_name: salud_ai_service
+    restart: unless-stopped
+    ports:
+      - '8001:8001'
+    environment:
+      # Para usar un Ollama ya instalado en la maquina en vez del contenedor:
+      # cambiar a http://host.docker.internal:11434 y levantar con --no-deps.
+      # Ojo: Ollama escucha solo en 127.0.0.1 por defecto y desde el contenedor
+      # no se alcanza; hay que ponerle OLLAMA_HOST=0.0.0.0 primero.
+      OLLAMA_URL: http://ollama:11434
+      OLLAMA_MODEL: mi-modelo
+      OLLAMA_TIMEOUT: '300'
+      OLLAMA_KEEP_ALIVE: 30m
+    depends_on:
+      model-init:
+        condition: service_completed_successfully
+    networks:
+      - ai_network
+
+networks:
+  ai_network:
+    driver: bridge
+
+volumes:
+  ollama_models:

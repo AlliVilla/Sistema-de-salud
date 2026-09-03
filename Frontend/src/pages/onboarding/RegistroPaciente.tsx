@@ -1,25 +1,46 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import EcgLine from '../../components/charts/EcgLine'
 import { theme } from '../../theme'
+import { registerUser } from '../../lib/api/users'
 import type { PatientProfile } from '../../types'
 
-interface RegistroPacienteProps {
-  onNext: () => void
-}
+const Condiciones = [
+  { name: "Diabetes Tipo 1" },
+  { name: "Diabetes Tipo 2" },
+  { name: "Hipertensión" },
+  { name: "Otro" }
+]
 
-export default function RegistroPaciente({ onNext }: RegistroPacienteProps) {
+export default function RegistroPaciente() {
+  const navigate = useNavigate()
   const [form, setForm] = useState<PatientProfile>({
     nombre: '',
     edad: '',
-    condicion: '',
+    condiciones: [],
     correo: '',
     contrasena: '',
-    contacto: '',
     telefono: '',
+    direccion: '',
+    emergencia: '',
   })
+  const [loading, setLoading] = useState(false)
+  const [otroDetalle, setOtroDetalle] = useState('')
+  const [error, setError] = useState<string | null>(null)
 
   const set = (k: keyof PatientProfile) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
     setForm((f) => ({ ...f, [k]: e.target.value }))
+
+  const addCondition = (newCondition: string) => {
+    setForm((f) => {
+      const conditions = f.condiciones.includes(newCondition)
+      return {
+        ...f, 
+        condiciones: conditions ? f.condiciones.filter((c) => c!==newCondition) : [...f.condiciones, newCondition]
+      }
+    })
+    if(newCondition === 'Otro') setOtroDetalle('')
+  }
 
   const inputStyle: React.CSSProperties = {
     width: '100%',
@@ -43,6 +64,51 @@ export default function RegistroPaciente({ onNext }: RegistroPacienteProps) {
     marginBottom: 6,
   }
 
+  const digits = (value: string) => value.replace(/\D/g, '')
+
+  const validate = (): string | null => {
+    if (!form.nombre.trim()) return 'El nombre completo es requerido.'
+    const age = Number(form.edad)
+    if (!form.edad || Number.isNaN(age) || age < 0 || age > 130) return 'Ingresa una edad válida (0–130).'
+    if (form.condiciones.length === 0) return 'Selecciona una condición médica.'
+    if(form.condiciones.includes('Otro') && !otroDetalle.trim()) return 'Especifique su condición medica.'
+    if (!/^\S+@\S+\.\S+$/.test(form.correo)) return 'Ingresa un correo electrónico válido.'
+    if (form.contrasena.length < 8) return 'La contraseña debe tener al menos 8 caracteres.'
+    if (digits(form.telefono).length !== 8) return 'El teléfono debe contener exactamente 8 dígitos.'
+    if (!form.direccion.trim()) return 'La dirección es requerida.'
+    if (digits(form.emergencia).length !== 8) return 'El teléfono de emergencia debe contener exactamente 8 dígitos.'
+    return null
+  }
+
+  const handleSubmit = async () => {
+    const validationError = validate()
+    if (validationError) {
+      setError(validationError)
+      return
+    }
+
+    setLoading(true)
+    setError(null)
+    try {
+      const condicionesFinal = form.condiciones.map((c) => c === 'Otro' ? otroDetalle.trim() : c)
+      await registerUser({
+        email: form.correo.trim(),
+        password: form.contrasena,
+        name: form.nombre.trim(),
+        phone: digits(form.telefono),
+        emergency_phone: digits(form.emergencia),
+        address: form.direccion.trim(),
+        age: Number(form.edad),
+        condition: condicionesFinal,
+      })
+      navigate('/confirmar')
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'No se pudo crear la cuenta. Intenta de nuevo.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <EcgLine color={theme.colors.teal} />
@@ -53,6 +119,23 @@ export default function RegistroPaciente({ onNext }: RegistroPacienteProps) {
         <p style={{ fontSize: 13, color: theme.colors.muted, lineHeight: 1.6, marginBottom: 28 }}>
           Tus datos se cifran y se registran en blockchain para un historial clínico seguro e inmutable.
         </p>
+
+        {error && (
+          <div
+            style={{
+              marginBottom: 18,
+              padding: '12px 14px',
+              borderRadius: theme.radius.input,
+              background: 'rgba(244,63,94,0.08)',
+              border: '1px solid rgba(244,63,94,0.35)',
+              color: '#F87171',
+              fontSize: 13,
+              lineHeight: 1.5,
+            }}
+          >
+            {error}
+          </div>
+        )}
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
           <div>
@@ -66,14 +149,44 @@ export default function RegistroPaciente({ onNext }: RegistroPacienteProps) {
           </div>
 
           <div>
-            <span style={labelStyle}>Condición médica principal</span>
-            <select value={form.condicion} onChange={set('condicion')} style={{ ...inputStyle, appearance: 'none' }}>
-              <option value="" disabled>Seleccionar…</option>
-              <option value="dm1">Diabetes tipo 1</option>
-              <option value="dm2">Diabetes tipo 2</option>
-              <option value="hta">Hipertensión</option>
-              <option value="otro">Otro</option>
-            </select>
+            <span style={labelStyle}>Condiciones médicas</span>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {Condiciones.map((c) => {
+                const checked = form.condiciones.includes(c.name)
+                return (
+                  <div>
+                  <label
+                    key={c.name}
+                    onClick={() => addCondition(c.name)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 10,
+                      padding: '10px 14px',
+                      borderRadius: theme.radius.input,
+                      border: `1px solid ${checked ? theme.colors.teal : theme.colors.border}`,
+                      background: checked ? 'rgba(45,212,191,0.08)' : theme.colors.surface2,
+                      cursor: 'pointer',
+                      fontFamily: "'Inter', sans-serif",
+                      fontSize: 14,
+                      color: theme.colors.muted,
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => addCondition(c.name)}
+                      style={{ accentColor: theme.colors.teal, width: 16, height: 16 }}
+                    />
+                    {c.name}
+                  </label>
+                  { c.name === 'Otro' && checked && (
+                    <input value={otroDetalle} onChange={(e) => setOtroDetalle(e.target.value)} placeholder="Especifica tu condición." style={{...inputStyle, marginTop: 8}} />
+                  )}
+                </div>
+                )
+              })}
+            </div>
           </div>
 
           <div>
@@ -83,13 +196,22 @@ export default function RegistroPaciente({ onNext }: RegistroPacienteProps) {
 
           <div>
             <span style={labelStyle}>Contraseña</span>
-            <input type="password" value={form.contrasena} onChange={set('contrasena')} placeholder="••••••••" autoComplete="current-password" style={inputStyle} />
+            <input type="password" value={form.contrasena} onChange={set('contrasena')} placeholder="••••••••" autoComplete="new-password" style={inputStyle} />
           </div>
 
           <div>
-            <span style={labelStyle}>Contacto de emergencia</span>
-            <input value={form.contacto} onChange={set('contacto')} placeholder="Nombre y apellido" style={{ ...inputStyle, marginBottom: 8 }} />
-            <input value={form.telefono} onChange={set('telefono')} placeholder="+504 9988-7766" style={inputStyle} />
+            <span style={labelStyle}>Teléfono</span>
+            <input inputMode="numeric" value={form.telefono} onChange={set('telefono')} placeholder="9988-7766" style={inputStyle} />
+          </div>
+
+          <div>
+            <span style={labelStyle}>Dirección</span>
+            <input value={form.direccion} onChange={set('direccion')} placeholder="Col. La Reforma, bloque 2, casa 14" style={inputStyle} />
+          </div>
+
+          <div>
+            <span style={labelStyle}>Teléfono de emergencia(Doctor o Persona Responsable)</span>
+            <input inputMode="numeric" value={form.emergencia} onChange={set('emergencia')} placeholder="9988-5566" style={inputStyle} />
           </div>
         </div>
       </div>
@@ -103,14 +225,15 @@ export default function RegistroPaciente({ onNext }: RegistroPacienteProps) {
         }}
       >
         <button
-          onClick={onNext}
+          onClick={handleSubmit}
+          disabled={loading}
           style={{
             width: '100%',
-            background: theme.colors.teal,
+            background: loading ? 'rgba(45,212,191,0.15)' : theme.colors.teal,
             border: 'none',
             borderRadius: theme.radius.button,
             padding: '16px',
-            color: '#0A1618',
+            color: loading ? theme.colors.teal : '#0A1618',
             fontFamily: "'Space Grotesk', sans-serif",
             fontWeight: 600,
             fontSize: 15,
@@ -118,7 +241,7 @@ export default function RegistroPaciente({ onNext }: RegistroPacienteProps) {
             letterSpacing: '-0.01em',
           }}
         >
-          Guardar y continuar
+          {loading ? 'Registrando…' : 'Guardar y continuar'}
         </button>
       </div>
     </div>

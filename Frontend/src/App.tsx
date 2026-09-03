@@ -1,5 +1,7 @@
-import { useState } from 'react'
+import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import AppLayout from './components/layout/AppLayout'
+import RequireAuth from './components/auth/RequireAuth'
+import Landing from './pages/Landing'
 import VincularDispositivo from './pages/onboarding/VincularDispositivo'
 import Login from './pages/onboarding/Login'
 import RegistroPaciente from './pages/onboarding/RegistroPaciente'
@@ -7,26 +9,49 @@ import Dashboard from './pages/Dashboard'
 import Alertas from './pages/Alertas'
 import Blockchain from './pages/Blockchain'
 import Perfil from './pages/Perfil'
-import type { ScreenId } from './types'
+import Confirmar from './pages/onboarding/ConfirmarEmail'
+import { useBluetooth } from './lib/bluetooth'
 
-// Screen flow:
-//   vincular → login → (dashboard si tiene cuenta | registro si no)
-//   registro → dashboard
-//   dashboard / alertas / blockchain / perfil ↔ navegable via el layout (NavBar)
 export default function App() {
-  const [screen, setScreen] = useState<ScreenId>('vincular')
+  const {
+    state: btState,
+    knownDevices,
+    connectedName,
+    scanNewDevice,
+    connectToDevice,
+    loadingKnown,
+    ultimaLectura,
+    historial,
+  } = useBluetooth()
 
   return (
-    <AppLayout currentScreen={screen} onNavigate={setScreen}>
-      {screen === 'vincular' && <VincularDispositivo onNext={() => setScreen('login')} />}
-      {screen === 'login' && (
-        <Login onLogin={() => setScreen('dashboard')} onCreateAccount={() => setScreen('registro')} />
-      )}
-      {screen === 'registro' && <RegistroPaciente onNext={() => setScreen('dashboard')} />}
-      {screen === 'dashboard' && <Dashboard />}
-      {screen === 'alertas' && <Alertas />}
-      {screen === 'blockchain' && <Blockchain />}
-      {screen === 'perfil' && <Perfil />}
-    </AppLayout>
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Landing />} />
+        <Route path="/landing" element={<Landing />} />
+        <Route element={<AppLayout btState={btState} connectedName={connectedName} />}>
+          <Route path="/login" element={<Login btState={btState} />} />
+          <Route path="/registro" element={<RegistroPaciente />} />
+          <Route path='/confirmar' element={<Confirmar/>}/>
+
+          <Route element={<RequireAuth />}>
+            <Route path="/vincular" element={
+              <VincularDispositivo
+                btState={btState}
+                knownDevices={knownDevices}
+                connectedName={connectedName}
+                scanNewDevice={scanNewDevice}
+                connectToDevice={connectToDevice}
+                loadingKnown={loadingKnown}
+              />
+            } />
+            <Route path="/dashboard" element={<Dashboard lectura={ultimaLectura} historial={historial} btState={btState} connectedName={connectedName} knownDevices={knownDevices} connectToDevice={connectToDevice} scanNewDevice={scanNewDevice} />} />
+            <Route path="/alertas" element={<Alertas />} />
+            <Route path="/historial" element={<Blockchain />} />
+            <Route path="/perfil" element={<Perfil />} />
+          </Route>
+        </Route>
+      </Routes>
+    </BrowserRouter>
   )
 }

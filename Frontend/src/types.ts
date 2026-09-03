@@ -4,7 +4,7 @@ export type ScreenId =
   | 'registro'
   | 'dashboard'
   | 'alertas'
-  | 'blockchain'
+  | 'historial'
   | 'perfil'
 
 export interface NavItem {
@@ -15,11 +15,12 @@ export interface NavItem {
 export interface PatientProfile {
   nombre: string
   edad: string
-  condicion: string
+  condiciones: string[]
   correo: string
   contrasena: string
-  contacto: string
   telefono: string
+  direccion: string
+  emergencia: string
 }
 
 export interface VitalsReading {
@@ -53,3 +54,5 @@ export interface BlockchainEntry {
   block: string
   status: 'verificado' | 'pendiente'
 }
+
+export type { BluetoothState, BleReading } from './lib/bluetooth'
