@@ -1,5 +1,6 @@
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import AppLayout from './components/layout/AppLayout'
+import RequireAuth from './components/auth/RequireAuth'
 import Landing from './pages/Landing'
 import VincularDispositivo from './pages/onboarding/VincularDispositivo'
 import Login from './pages/onboarding/Login'
@@ -29,23 +30,26 @@ export default function App() {
         <Route path="/" element={<Landing />} />
         <Route path="/landing" element={<Landing />} />
         <Route element={<AppLayout btState={btState} connectedName={connectedName} />}>
-          <Route path="/vincular" element={
-            <VincularDispositivo
-              btState={btState}
-              knownDevices={knownDevices}
-              connectedName={connectedName}
-              scanNewDevice={scanNewDevice}
-              connectToDevice={connectToDevice}
-              loadingKnown={loadingKnown}
-            />
-          } />
           <Route path="/login" element={<Login btState={btState} />} />
           <Route path="/registro" element={<RegistroPaciente />} />
-          <Route path="/dashboard" element={<Dashboard lectura={ultimaLectura} historial={historial} btState={btState} connectedName={connectedName} knownDevices={knownDevices} connectToDevice={connectToDevice} scanNewDevice={scanNewDevice} />} />
-          <Route path="/alertas" element={<Alertas />} />
-          <Route path="/historial" element={<Blockchain />} />
-          <Route path="/perfil" element={<Perfil />} />
           <Route path='/confirmar' element={<Confirmar/>}/>
+
+          <Route element={<RequireAuth />}>
+            <Route path="/vincular" element={
+              <VincularDispositivo
+                btState={btState}
+                knownDevices={knownDevices}
+                connectedName={connectedName}
+                scanNewDevice={scanNewDevice}
+                connectToDevice={connectToDevice}
+                loadingKnown={loadingKnown}
+              />
+            } />
+            <Route path="/dashboard" element={<Dashboard lectura={ultimaLectura} historial={historial} btState={btState} connectedName={connectedName} knownDevices={knownDevices} connectToDevice={connectToDevice} scanNewDevice={scanNewDevice} />} />
+            <Route path="/alertas" element={<Alertas />} />
+            <Route path="/historial" element={<Blockchain />} />
+            <Route path="/perfil" element={<Perfil />} />
+          </Route>
         </Route>
       </Routes>
     </BrowserRouter>

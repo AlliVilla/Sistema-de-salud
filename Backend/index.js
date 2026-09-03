@@ -4,6 +4,7 @@ import cors from "cors";
 import swaggerJSDoc from "swagger-jsdoc";
 import swaggerUI from "swagger-ui-express"
 import connectDB from "./db.js";
+import { apiLimiter } from "./src/middlewares/rateLimit.middleware.js"
 import userRoutes from "./src/routes/users.route.js"
 import reportRoutes from "./src/routes/reports.route.js"
 import diagnosticRoutes from "./src/routes/diagnostics.route.js"
@@ -12,6 +13,7 @@ import { version } from "mongoose";
 const app = express();
 
 app.use(cors());
+app.use(apiLimiter);
 app.use(express.json())
 
 const PORT = process.env.PORT;

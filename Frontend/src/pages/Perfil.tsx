@@ -1,12 +1,15 @@
 import type { ReactNode } from 'react'
+import { useNavigate } from 'react-router-dom'
 import EcgLine from '../components/charts/EcgLine'
 import { PATIENT } from '../lib/mock'
+import { clearSession } from '../lib/auth'
 import { theme } from '../theme'
 
 interface SettingsItem {
   label: string
   danger: boolean
   icon: ReactNode
+  action?: 'logout'
 }
 
 const settingsItems: SettingsItem[] = [
@@ -44,6 +47,7 @@ const settingsItems: SettingsItem[] = [
   {
     label: 'Cerrar sesión',
     danger: true,
+    action: 'logout',
     icon: (
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7">
         <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
@@ -59,6 +63,14 @@ const dataRows = [
 ]
 
 export default function Perfil() {
+  const navigate = useNavigate()
+
+  const handleItemClick = (item: SettingsItem) => {
+    if (item.action !== 'logout') return
+    clearSession()
+    navigate('/login', { replace: true })
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <EcgLine color={theme.colors.teal} />
@@ -133,6 +145,7 @@ export default function Perfil() {
           {settingsItems.map((item, i, arr) => (
             <button
               key={item.label}
+              onClick={() => handleItemClick(item)}
               style={{
                 width: '100%',
                 background: 'none',

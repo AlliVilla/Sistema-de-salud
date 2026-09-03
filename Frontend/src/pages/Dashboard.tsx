@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import EcgLine from '../components/charts/EcgLine'
 import TempTrendChart from '../components/charts/TempTrendChart'
 import { PATIENT, mockVitals } from '../lib/mock'
 import { theme } from '../theme'
 import type { BleReading, BluetoothState, BleDevice } from '../lib/bluetooth'
+import { registerReport } from '../lib/api/reports'
 
 const BLE_TABLE_ROWS = 15
 
@@ -21,6 +22,7 @@ export default function Dashboard({ lectura, historial, btState, connectedName, 
   const [modalOpen, setModalOpen] = useState(false)
   const [scanning, setScanning] = useState(false)
   const [connectingId, setConnectingId] = useState<string | null>(null)
+  const lastReportedTimestamp = useRef<number | null>(null)
 
   const heartRate = lectura?.hrValid ? lectura.hr : "--"
   const spo2 = lectura?.spo2Valid ? lectura.spo2 : "--"
@@ -59,6 +61,24 @@ export default function Dashboard({ lectura, historial, btState, connectedName, 
       if (ok) closeModal()
     }
   }
+
+  useEffect(() => {
+    if(!lectura) return;
+    if(!lectura.hr || lectura.temp == null || !lectura.spo2) return;
+    if(lastReportedTimestamp.current === Number(lectura.timestamp)) return;
+
+    lastReportedTimestamp.current = Number(lectura.timestamp)
+
+    registerReport({
+      heart_rate: lectura.hr,
+      temperature: lectura.temp,
+      oxygenation: lectura.spo2,
+    }).catch((error) => {
+      console.log(`Ocurio un error: ${error}`)
+      lastReportedTimestamp.current = null
+    })
+
+  }, [lectura])
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>

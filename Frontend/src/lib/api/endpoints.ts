@@ -12,4 +12,5 @@ export const ENDPOINTS = {
   blockchain: '/api/blockchain/entries',
   blockchainShare: '/api/blockchain/share',
   ollamaChat: '/api/ollama/chat',
+  createReport: '/report/create'
 } as const

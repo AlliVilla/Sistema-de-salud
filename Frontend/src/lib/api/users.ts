@@ -12,7 +12,7 @@ export interface RegisterPayload {
   emergency_phone: string
   address: string
   age: number
-  condition: string
+  condition: string[]
 }
 
 export interface UserResponse {
@@ -24,7 +24,7 @@ export interface UserResponse {
   address: string
   status: boolean
   age: number
-  condition: string
+  condition: string[]
 }
 
 interface RegisterResponse {

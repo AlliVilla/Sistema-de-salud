@@ -170,8 +170,8 @@ const editUser = async(req, res) => {
             return res.status(403).send({ message: "No tienes permiso para modificar este usuario", result: false })
         }
 
-        const { name, phone, emergency_phone, address, status, age, condition } =  req.body;
-        const fields = { name, phone, emergency_phone, address, status, age, condition };
+        const { name, phone, emergency_phone, address, status, age, condition, role } =  req.body;
+        const fields = { name, phone, emergency_phone, address, status, age, condition, role };
         const update = Object.fromEntries(
             Object.entries(fields).filter(([, value]) => value !== undefined)
         );
@@ -202,6 +202,21 @@ const getUsers = async(req, res) => {
         return res.status(200).send({users})
     }catch(error){
         console.error("ERROR FETCHING USERS:", error);
+        const { status, message } = mapMongoError(error);
+        return res.status(status).send({ message, result: false })
+    }
+}
+
+const getMe = async(req, res) => {
+    try{
+        const user = await User.findById(req.user.id)
+            .select('-password -emailConfirmationToken -emailConfirmationExpires')
+        if(!user){
+            return res.status(404).send({ message: "Usuario no encontrado", result: false })
+        }
+        return res.status(200).send({user})
+    }catch(error){
+        console.error("ERROR FETCHING PROFILE:", error);
         const { status, message } = mapMongoError(error);
         return res.status(status).send({ message, result: false })
     }
@@ -238,4 +253,4 @@ const confirmEmail = async(req, res) => {
     }
 }
 
-export default { createUser, validateUser, editUser, getUsers, confirmEmail };
+export default { createUser, validateUser, editUser, getUsers, getMe, confirmEmail };

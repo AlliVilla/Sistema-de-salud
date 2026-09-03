@@ -1,14 +1,18 @@
-// HTTP client for the Express backend in `backend/`.
-//
-// Points to `VITE_API_URL` (default http://localhost:3000) via the Vite
-// environment. Set it in a `.env.local` file, e.g.:
-//
-//   VITE_API_URL=http://localhost:3000
-//
-// Swap the `fetch` implementation for axios/ky if the team prefers it; the
-// pages only depend on the `api()` helper, not on the transport.
-
 const API_BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
+
+const TOKEN_STORAGE_KEY = 'auth_token' // usa la misma key donde guardas el token al hacer login
+
+export function getToken(): string | null {
+  return localStorage.getItem(TOKEN_STORAGE_KEY)
+}
+
+export function setToken(token: string): void {
+  localStorage.setItem(TOKEN_STORAGE_KEY, token)
+}
+
+export function clearToken(): void {
+  localStorage.removeItem(TOKEN_STORAGE_KEY)
+}
 
 export class ApiError extends Error {
   constructor(
@@ -36,10 +40,16 @@ async function readErrorMessage(res: Response): Promise<string> {
 }
 
 export async function api<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const token = getToken()
+
   let res: Response
   try {
     res = await fetch(`${API_BASE_URL}${path}`, {
-      headers: { 'Content-Type': 'application/json', ...(options.headers ?? {}) },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(options.headers ?? {}),
+      },
       ...options,
     })
   } catch {

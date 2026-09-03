@@ -80,7 +80,7 @@ const generate = async(req, res) => {
             return res.status(400).send("Bad request, invalid report id")
         }
 
-        const reportFound = await Report.findById(report_id)
+        const reportFound = await Report.findOne({ _id: report_id, user_id: req.user.id })
         if(!reportFound){
             return res.status(404).send("Report not found")
         }
