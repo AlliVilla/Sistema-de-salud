@@ -1,14 +1,12 @@
 const TOKEN_KEY = 'vitacare_token'
 
+export type UserRole = 'Admin' | 'Client'
+
 interface TokenPayload {
   sub?: string
   email?: string
+  role?: UserRole
   exp?: number
-}
-
-try {
-  localStorage.removeItem(TOKEN_KEY)
-} catch {
 }
 
 function decodePayload(token: string): TokenPayload | null {
@@ -33,7 +31,7 @@ function isExpired(token: string): boolean {
 export function getToken(): string | null {
   let token: string | null
   try {
-    token = sessionStorage.getItem(TOKEN_KEY)
+    token = localStorage.getItem(TOKEN_KEY) ?? sessionStorage.getItem(TOKEN_KEY)
   } catch {
     return null
   }
@@ -49,6 +47,7 @@ export function getToken(): string | null {
 export function setToken(token: string): void {
   try {
     sessionStorage.setItem(TOKEN_KEY, token)
+    localStorage.setItem(TOKEN_KEY, token)
   } catch {
   }
 }
@@ -68,4 +67,13 @@ export function isAuthenticated(): boolean {
 export function getSessionEmail(): string | null {
   const token = getToken()
   return token ? decodePayload(token)?.email ?? null : null
+}
+
+export function getSessionRole(): UserRole | null {
+  const token = getToken()
+  return token ? decodePayload(token)?.role ?? null : null
+}
+
+export function isAdmin(): boolean {
+  return getSessionRole() === 'Admin'
 }
