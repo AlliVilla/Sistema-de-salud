@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react'
 
-export type NavIconKey = 'home' | 'alert' | 'hist' | 'user'
+export type NavIconKey = 'home' | 'alert' | 'hist' | 'user' | 'admin'
 
-export const NAV_ICON_KEYS: NavIconKey[] = ['home', 'alert', 'hist', 'user']
+export const NAV_ICON_KEYS: NavIconKey[] = ['home', 'alert', 'hist', 'user', 'admin']
 
 export function renderNavIcon(key: NavIconKey, size: number): ReactNode {
   return (
@@ -27,6 +27,12 @@ export function renderNavIcon(key: NavIconKey, size: number): ReactNode {
         <>
           <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
           <circle cx="12" cy="7" r="4" />
+        </>
+      )}
+      {key === 'admin' && (
+        <>
+          <path d="M12 2l7 4v6c0 4.4-2.6 7.6-7 10-4.4-2.4-7-5.6-7-10V6z" />
+          <path d="M9 12l2 2 4-4" />
         </>
       )}
     </svg>

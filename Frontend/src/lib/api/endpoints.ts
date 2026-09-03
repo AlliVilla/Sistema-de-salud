@@ -12,5 +12,10 @@ export const ENDPOINTS = {
   blockchain: '/api/blockchain/entries',
   blockchainShare: '/api/blockchain/share',
   ollamaChat: '/api/ollama/chat',
-  createReport: '/report/create'
+  createReport: '/report/create',
+  adminUsers: '/user/admin/list',
+  adminGetUser: (id: string) => `/user/admin/${id}`,
+  adminUpdateRole: (id: string) => `/user/admin/${id}/role`,
+  adminUpdateStatus: (id: string) => `/user/admin/${id}/status`,
+  adminDeleteUser: (id: string) => `/user/admin/${id}`,
 } as const

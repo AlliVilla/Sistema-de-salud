@@ -78,7 +78,7 @@ const authMiddleware = (req, res, next) => {
         return res.status(401).json({ message: "Unauthorized, invalid or expired token" });
     }
 
-    req.user = { id: payload.sub };
+    req.user = { id: payload.sub, role: payload.role || 'Client' };
     next();
 };
 

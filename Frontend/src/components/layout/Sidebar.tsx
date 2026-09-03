@@ -1,9 +1,10 @@
 import { NavLink } from 'react-router-dom'
-import { NAV_ITEMS } from '../../constants/navigation'
+import { getNavItems } from '../../constants/navigation'
 import { ROUTES } from '../../constants/routes'
 import { renderNavIcon } from '../shared/Icons'
 import type { NavIconKey } from '../shared/Icons'
 import type { BluetoothState } from '../../lib/bluetooth'
+import { getSessionRole } from '../../lib/auth'
 import type { ScreenId } from '../../types'
 
 interface SidebarProps {
@@ -18,6 +19,8 @@ export default function Sidebar({ currentScreen, btState, connectedName }: Sideb
   const isConnected = btState === 'connected'
   const deviceName = connectedName || 'Sin dispositivo'
   const deviceStatus = isConnected ? 'dispositivo conectado' : 'desconectado'
+  const role = getSessionRole()
+  const navItems = getNavItems(role)
 
   return (
     <aside className="hidden w-[264px] flex-none flex-col border-r border-[var(--border)] bg-[var(--bg-base)] md:flex">
@@ -43,8 +46,9 @@ export default function Sidebar({ currentScreen, btState, connectedName }: Sideb
           className="flex flex-col gap-1"
           aria-label="Navegación principal"
         >
-          {NAV_ITEMS.map((item, i) => {
+          {navItems.map((item, i) => {
             const isActive = currentScreen === item.screen
+            const iconKey = role === 'Admin' ? 'admin' : NAV_ICONS[Math.min(i, NAV_ICONS.length - 1)]
             return (
               <NavLink
                 key={item.screen}
@@ -62,7 +66,7 @@ export default function Sidebar({ currentScreen, btState, connectedName }: Sideb
                   className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg transition-colors duration-200 ${isActive ? 'bg-[rgba(45,212,191,0.14)] text-[var(--accent-teal)]' : ''
                     }`}
                 >
-                  {renderNavIcon(NAV_ICONS[i], 20)}
+                  {renderNavIcon(iconKey, 20)}
                 </span>
                 <span
                   className="text-[15px]"
