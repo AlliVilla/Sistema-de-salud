@@ -8,6 +8,7 @@ export const ROUTES: Record<ScreenId, string> = {
   alertas: '/alertas',
   historial: '/historial',
   perfil: '/perfil',
+  admin: '/admin',
 }
 
 export function screenFromPath(pathname: string): ScreenId {
