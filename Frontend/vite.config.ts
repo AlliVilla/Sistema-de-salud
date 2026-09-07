@@ -3,14 +3,24 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
 import path from 'node:path'
+import fs from 'node:fs'
+import basicSsl from '@vitejs/plugin-basic-ssl'
 
 import siteConfiguration from './.figma/make/site.json'
+
+const CERT_DIR = path.resolve(__dirname, 'certs')
+const CERT_PATH = path.join(CERT_DIR, 'dev-cert.pem')
+const CERT_KEY_PATH = path.join(CERT_DIR, 'dev-key.pem')
 
 export default defineConfig(({ mode, command }) => {
   const emitSourcemaps = mode === 'development'
 
   const isDevServer = command === 'serve'
   const env = loadEnv(mode, process.cwd(), '')
+
+  // HTTPS con certificado confiado (mkcert) si existe; en dev, si no hay cert,
+  // se usa basicSsl (self-signed) para que la IP también quede en HTTPS.
+  const hasCert = fs.existsSync(CERT_PATH) && fs.existsSync(CERT_KEY_PATH)
 
   return {
     base: process.env.FIGMA_PUBLIC_URL ? `${process.env.FIGMA_PUBLIC_URL}/` : '/',
@@ -65,6 +75,7 @@ export default defineConfig(({ mode, command }) => {
           ],
         },
       }),
+      ...(isDevServer ? [basicSsl()] : []),
       figmaSiteConfiguration(siteConfiguration),
       figmaErrorOverlayReplay(),
       figmaReactRefreshBoundaryFallback(),
@@ -87,6 +98,9 @@ export default defineConfig(({ mode, command }) => {
       port: parseInt(process.env.PORT || '8443'),
       strictPort: true,
       watch: { ignored: ['**/.figma/**'] },
+      ...(isDevServer && hasCert
+        ? { https: { cert: fs.readFileSync(CERT_PATH), key: fs.readFileSync(CERT_KEY_PATH) } }
+        : {}),
     },
     preview: {
       host: '0.0.0.0',
