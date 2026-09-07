@@ -2,6 +2,7 @@ import { defineConfig, loadEnv, type HtmlTagDescriptor, type Plugin } from 'vite
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import path from 'node:path'
+import basicSsl from '@vitejs/plugin-basic-ssl'
 
 import siteConfiguration from './.figma/make/site.json'
 
@@ -25,6 +26,7 @@ export default defineConfig(({ mode, command }) => {
       }),
       react(),
       tailwindcss(),
+      ...(isDevServer ? [basicSsl()] : []),
       figmaSiteConfiguration(siteConfiguration),
       figmaErrorOverlayReplay(),
       figmaReactRefreshBoundaryFallback(),
