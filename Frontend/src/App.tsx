@@ -12,6 +12,7 @@ import Blockchain from './pages/Blockchain'
 import Perfil from './pages/Perfil'
 import Confirmar from './pages/onboarding/ConfirmarEmail'
 import AdminPanel from './pages/AdminPanel'
+import BtTest from './pages/BtTest'
 import { useBluetooth } from './lib/bluetooth'
 
 export default function App() {
@@ -22,6 +23,7 @@ export default function App() {
     scanNewDevice,
     connectToDevice,
     loadingKnown,
+    btSupported,
     ultimaLectura,
     historial,
   } = useBluetooth()
@@ -31,6 +33,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/landing" element={<Landing />} />
+        <Route path="/bt-test" element={<BtTest />} />
         <Route element={<AppLayout btState={btState} connectedName={connectedName} />}>
           <Route path="/login" element={<Login btState={btState} />} />
           <Route path="/registro" element={<RegistroPaciente />} />
@@ -47,6 +50,7 @@ export default function App() {
                   scanNewDevice={scanNewDevice}
                   connectToDevice={connectToDevice}
                   loadingKnown={loadingKnown}
+                  btSupported={btSupported}
                 />
               } />
               <Route path="/dashboard" element={<Dashboard lectura={ultimaLectura} historial={historial} btState={btState} connectedName={connectedName} knownDevices={knownDevices} connectToDevice={connectToDevice} scanNewDevice={scanNewDevice} />} />

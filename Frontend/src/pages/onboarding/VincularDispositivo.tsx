@@ -9,6 +9,7 @@ interface VincularDispositivoProps {
   knownDevices: BleDevice[]
   connectedName: string | null
   loadingKnown: boolean
+  btSupported: boolean
   scanNewDevice: () => Promise<BleDevice | null>
   connectToDevice: (device: BleDevice) => Promise<boolean>
 }
@@ -21,7 +22,7 @@ const stateLabel: Record<BluetoothState, string> = {
   error: 'Error',
 }
 
-export default function VincularDispositivo({ btState, knownDevices, connectedName, loadingKnown, scanNewDevice, connectToDevice }: VincularDispositivoProps) {
+export default function VincularDispositivo({ btState, knownDevices, connectedName, loadingKnown, btSupported, scanNewDevice, connectToDevice }: VincularDispositivoProps) {
   const navigate = useNavigate()
   const [scanning, setScanning] = useState(false)
   const [connectingId, setConnectingId] = useState<string | null>(null)
@@ -105,6 +106,17 @@ export default function VincularDispositivo({ btState, knownDevices, connectedNa
         {errorMsg && (
           <div style={{ background: 'rgba(255,107,107,0.08)', border: '1px solid rgba(255,107,107,0.2)', borderRadius: 10, padding: '10px 14px', marginBottom: 16 }}>
             <span style={{ fontSize: 12, color: theme.colors.danger }}>{errorMsg}</span>
+          </div>
+        )}
+
+        {!btSupported && (
+          <div style={{ background: 'rgba(255,175,0,0.08)', border: '1px solid rgba(255,175,0,0.25)', borderRadius: 10, padding: '12px 14px', marginBottom: 16 }}>
+            <span style={{ fontSize: 12, color: theme.colors.amber, display: 'block', fontWeight: 600, marginBottom: 4 }}>
+              Web Bluetooth no está disponible en este navegador.
+            </span>
+            <span style={{ fontSize: 11, color: theme.colors.muted, display: 'block', lineHeight: 1.5 }}>
+              Abre la app por <span className="font-mono">localhost</span> o por <span className="font-mono">https://</span> (la IP por HTTP no es un contexto seguro).
+            </span>
           </div>
         )}
 
@@ -234,7 +246,7 @@ export default function VincularDispositivo({ btState, knownDevices, connectedNa
 
         <button
           onClick={handleScan}
-          disabled={scanning || isConnecting}
+          disabled={scanning || isConnecting || !btSupported}
           style={{
             background: scanning ? 'rgba(45,212,191,0.15)' : theme.colors.teal,
             border: 'none',
@@ -247,10 +259,10 @@ export default function VincularDispositivo({ btState, knownDevices, connectedNa
             cursor: scanning ? 'default' : 'pointer',
             transition: 'all 0.2s',
             letterSpacing: '-0.01em',
-            opacity: scanning ? 0.7 : 1,
+            opacity: scanning || !btSupported ? 0.7 : 1,
           }}
         >
-          {scanning ? 'Buscando dispositivos…' : isConnected ? 'Dispositivo vinculado' : 'Escanear nuevos dispositivos'}
+          {!btSupported ? 'Bluetooth no disponible' : scanning ? 'Buscando dispositivos…' : isConnected ? 'Dispositivo vinculado' : 'Escanear nuevos dispositivos'}
         </button>
       </div>
     </div>
