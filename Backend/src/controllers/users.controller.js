@@ -59,7 +59,20 @@ const createUser = async (req, res) => {
                     `
             });
 
-            return res.status(201).send({ message: "Usuario creado correctamente, esperando confirmacion de email", user: sendUser });
+            return res.status(201).send({
+                message: "Usuario creado correctamente, esperando confirmacion de email",
+                user: {
+                    id: findEmail._id,
+                    email: findEmail.email,
+                    name: findEmail.name,
+                    phone: findEmail.phone,
+                    emergency_phone: findEmail.emergency_phone,
+                    address: findEmail.address,
+                    status: findEmail.status,
+                    age: findEmail.age,
+                    condition: findEmail.condition
+                }
+            });
         }
 
         const confirmationToken = crypto.randomBytes(32).toString("hex")

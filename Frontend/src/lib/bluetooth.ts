@@ -68,6 +68,7 @@ export function useBluetooth() {
   const [knownDevices, setKnownDevices] = useState<BleDevice[]>([])
   const [connectedName, setConnectedName] = useState<string | null>(null)
   const [loadingKnown, setLoadingKnown] = useState(true)
+  const btSupported = typeof navigator !== 'undefined' && 'bluetooth' in navigator
   const deviceRef = useRef<BluetoothDevice | null>(null)
   const characteristicRef = useRef<BluetoothRemoteGATTCharacteristic | null>(null)
   const connectingRef = useRef(false)
@@ -250,6 +251,7 @@ export function useBluetooth() {
     connectToDevice,
     disconnect,
     loadingKnown,
+    btSupported,
     ultimaLectura,
     historial,
   }
