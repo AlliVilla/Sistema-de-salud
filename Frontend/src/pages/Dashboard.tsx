@@ -5,6 +5,8 @@ import { PATIENT, mockVitals } from '../lib/mock'
 import { theme } from '../theme'
 import type { BleReading, BluetoothState, BleDevice } from '../lib/bluetooth'
 import { registerReport } from '../lib/api/reports'
+import { generateDiagnostics } from '../lib/api/diagnostics'
+import { useDiagnostics } from '../lib/context/diagnosticsContext'
 
 const BLE_TABLE_ROWS = 15
 
@@ -18,10 +20,26 @@ interface DashboardProps {
   scanNewDevice: () => Promise<BleDevice | null>
 }
 
+interface Report {
+  id: string,
+  user_id: string,
+  heart_rate?: number, 
+  temperature?: number,
+  oxygenation?: number
+  createdAt: string
+}
+
+interface ReportResponse {
+  message: string,
+  report: Report
+}
+
 export default function Dashboard({ lectura, historial, btState, connectedName, knownDevices, connectToDevice, scanNewDevice }: DashboardProps) {
   const [modalOpen, setModalOpen] = useState(false)
   const [scanning, setScanning] = useState(false)
   const [connectingId, setConnectingId] = useState<string | null>(null)
+  const { addDiagnostic } = useDiagnostics()
+  const [sendReport, setSendReport] = useState<ReportResponse | null>(null)
   const lastReportedTimestamp = useRef<number | null>(null)
 
   const heartRate = lectura?.hrValid ? lectura.hr : "--"
@@ -63,21 +81,47 @@ export default function Dashboard({ lectura, historial, btState, connectedName, 
   }
 
   useEffect(() => {
+    const handleDiagnostic = async() => {
+      const report = sendReport?.report
+      if(!report?.id) return
+      if(!report.heart_rate || !report.temperature || !report.oxygenation) return
+
+      try{
+        const response = await generateDiagnostics(sendReport.report._id)
+        if(!response.diagnostic){
+          addDiagnostic(response.diagnostic)
+        }
+      }catch(error){
+        console.error(`Error: ${error}`)
+      }
+    }
+    handleDiagnostic()
+  }, [sendReport, ])
+
+  useEffect(() => {
     if(!lectura) return;
     if(!lectura.hr || lectura.temp == null || !lectura.spo2) return;
     if(lastReportedTimestamp.current === Number(lectura.timestamp)) return;
 
     lastReportedTimestamp.current = Number(lectura.timestamp)
 
-    registerReport({
-      heart_rate: lectura.hr,
-      temperature: lectura.temp,
-      oxygenation: lectura.spo2,
-    }).catch((error) => {
-      console.log(`Ocurio un error: ${error}`)
-      lastReportedTimestamp.current = null
-    })
-
+    const getVitals = async() => {
+      try{
+        const response = await registerReport({
+          heart_rate: lectura.hr,
+          temperature: lectura.temp,
+          oxygenation: lectura.spo2,
+        }).catch((error) => {
+          console.log(`Ocurio un error: ${error}`)
+          lastReportedTimestamp.current = null
+        })
+        setSendReport(response)
+      }catch(error){
+        console.log(`Error: ${error}`)
+        lastReportedTimestamp.current = null
+      }
+    }
+    getVitals()
   }, [lectura])
 
   return (

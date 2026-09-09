@@ -1,4 +1,4 @@
-import { BrowserRouter, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Route, Routes, Outlet } from 'react-router-dom'
 import AppLayout from './components/layout/AppLayout'
 import RequireAuth from './components/auth/RequireAuth'
 import RequireRole from './components/auth/RequireRole'
@@ -12,6 +12,7 @@ import Blockchain from './pages/Blockchain'
 import Perfil from './pages/Perfil'
 import Confirmar from './pages/onboarding/ConfirmarEmail'
 import AdminPanel from './pages/AdminPanel'
+import { DiagnosticsProvider } from './lib/context/diagnosticsContext'
 import BtTest from './pages/BtTest'
 import { useBluetooth } from './lib/bluetooth'
 
@@ -41,6 +42,7 @@ export default function App() {
 
           <Route element={<RequireAuth />}>
             {/* Rutas de cliente */}
+            <Route element={<DiagnosticsProvider><Outlet /></DiagnosticsProvider>}>
             <Route element={<RequireRole roles={['Client']} />}>
               <Route path="/vincular" element={
                 <VincularDispositivo
@@ -58,7 +60,8 @@ export default function App() {
               <Route path="/historial" element={<Blockchain />} />
               <Route path="/perfil" element={<Perfil />} />
             </Route>
-
+            </Route>
+            
             {/* Rutas de administrador */}
             <Route element={<RequireRole roles={['Admin']} />}>
               <Route path="/admin" element={<AdminPanel />} />

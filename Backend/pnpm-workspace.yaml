@@ -1,2 +1,5 @@
 allowBuilds:
-  '@scarf/scarf': true
+  '@scarf/scarf': set this to true or false
+  ngrok: set this to true or false
+  pkcs11js: set this to true or false
+  protobufjs: set this to true or false
