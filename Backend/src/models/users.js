@@ -56,6 +56,14 @@ const users = new mongoose.Schema({
         enum: ['Admin', 'Client'],
         default: 'Client'
     },
+    telegramChatId: {
+        type: String,
+        default: null
+    },
+    telegramLinkToken: {
+        type: String,
+        default: null
+    },
     emailConfirmation: {
         type: Boolean,
         default: false

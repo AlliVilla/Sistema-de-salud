@@ -265,6 +265,23 @@ const confirmEmail = async (req, res) => {
     }
 }
 
+const generateTelegramLink = async (req, res) => {
+    try {
+        const token = crypto.randomBytes(32).toString("hex");
+
+        await User.findByIdAndUpdate( req.user.id, { telegramLinkToken: token } );
+
+        const botUsername = process.env.TELEGRAM_BOT_USERNAME;
+
+        const telegramUrl = `https://t.me/${botUsername}?start=${token}`;
+
+        return res.status(200).json({message: "Telegram link generated", telegramUrl});
+    } catch (error) {
+        console.error("TELEGRAM LINK ERROR:", error);
+        return res.status(500).json({message: "Internal server error"});
+    }
+};
+
 /**
  * ─── ADMINISTRACIÓN DE USUARIOS ────────────────────────────────────────
  * Los administradores gestionan únicamente usuarios y sus roles.
@@ -417,4 +434,4 @@ const adminDeleteUser = async (req, res) => {
     }
 }
 
-export default { createUser, validateUser, editUser, getUsers, getMe, confirmEmail, adminListUsers, adminGetUser, adminUpdateRole, adminUpdateStatus, adminDeleteUser };
+export default { createUser, validateUser, editUser, getUsers, getMe, confirmEmail, adminListUsers, adminGetUser, adminUpdateRole, adminUpdateStatus, adminDeleteUser, generateTelegramLink };

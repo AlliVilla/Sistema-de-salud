@@ -319,6 +319,7 @@ const router = express.Router();
 router.get('/', authMiddleware, requireRole('Admin'), usersController.getUsers);
 router.get('/me', authMiddleware, usersController.getMe);
 router.get('/confirm-email/:token', confirmEmailLimiter, usersController.confirmEmail);
+router.get("/telegram/link", authMiddleware, usersController.generateTelegramLink);
 router.post('/validate', loginLimiter, usersController.validateUser);
 router.post('/create', createAccountLimiter, usersController.createUser);
 router.patch('/update/:id', authMiddleware, usersController.editUser);

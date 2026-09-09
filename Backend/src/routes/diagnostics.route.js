@@ -270,5 +270,6 @@ router.get('/', diagnosticController.getDiagnostics)
 router.get('/:id', diagnosticController.getDiagnostic)
 router.post('/create', diagnosticController.createDiagnostic)
 router.post('/generate/:report_id', diagnosticController.generate)
+router.get('/verificar/:id', diagnosticController.verificarIntegridad);
 
 export default router

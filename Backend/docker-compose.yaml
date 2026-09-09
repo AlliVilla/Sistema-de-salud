@@ -18,8 +18,38 @@ services:
       retries: 5
     networks:
       - backend_network
+
+  api:
+    build: .
+    container_name: diagnostics_api
+    restart: unless-stopped
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    # Carga JWT_SECRET, EMAIL_*, TELEGRAM_*, AI_SERVICE_URL, PORT, etc. desde tu .env
+    env_file:
+      - .env
+    environment:
+      # Sobrescribe lo del .env: dentro de docker, mongo se resuelve por nombre de servicio, no localhost.
+      MONGO_URI: mongodb://mongo:mongo@mongodb:27017/cine_mongo?authSource=admin
+      DISCOVERY_AS_LOCALHOST: "false"
+    ports:
+      - "3000:3000"
+    volumes:
+      # Wallet ya enrolado (admin.id / appUser.id) — se mantiene fuera de la imagen.
+      - ./wallet:/app/wallet
+      # Perfil de conexión con hostnames de docker en vez de localhost.
+      - ./connection-profile.docker.json:/app/connection-profile.json:ro
+    networks:
+      - backend_network
+      - fabric_test
+
 networks:
   backend_network:
     driver: bridge
+  fabric_test:
+    # Debe coincidir con la red real que crea test-network (verifica con `docker network ls`).
+    external: true
+
 volumes:
   mongo_data:

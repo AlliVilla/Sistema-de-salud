@@ -1,27 +1,85 @@
 import EcgLine from '../components/charts/EcgLine'
 import { mockBlockchainEntries } from '../lib/mock'
 import { theme } from '../theme'
+import { useState, useEffect } from 'react'
+import { getDiagnostics, validateDiagnostics } from '@/lib/api/diagnostics'
+
+interface Report{
+  heart_rate: Number,
+  temperature: Number,
+  oxygenation: Number
+}
+
+interface Diagnostic {
+  _id: String,
+  description: String,
+  hash: String,
+  report_id: Report
+}
+
+interface Diagnostics {
+  diagnostics: Diagnostic[]
+}
+
+interface ValidateDiagnosticResponse {
+    message: String,
+    data?:{
+      integro: Boolean, 
+      hashActual: String,
+      hashBlockchain: String
+      diagnostic: Diagnostic
+    }
+}
 
 export default function Historial() {
+
+  const [diagnostics, setDiagnostics] = useState<Diagnostics>();
+  const [validation, setValidation] = useState<Record<string, ValidateDiagnosticResponse>>({});
+  
+  useEffect(() => {
+    const fetchDiagnostics = async() => {
+      try{
+        const response = await getDiagnostics();
+        console.log(response)
+        setDiagnostics(response)
+
+        for(const diagnostic of response.diagnostics){
+          try{
+            const validationResponse = await validateDiagnostics<ValidateDiagnosticResponse>(diagnostic._id);
+
+            console.log(validationResponse)
+            
+            setValidation(prev => ({
+              ...prev,
+              [diagnostic._id]: validationResponse
+            }))
+          }catch(err){
+            console.error(`Error: ${err}`)
+          }
+        }
+      }catch(err){
+        console.error(`Error: ${err}`)
+      }
+    }
+    fetchDiagnostics()
+  }, [])
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <EcgLine color={theme.colors.violet} />
       <div style={{ flex: 1, overflow: 'auto', padding: '20px 20px 32px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
           <h1 className="font-display" style={{ fontSize: 22, fontWeight: 700, color: theme.colors.text, letterSpacing: '-0.02em' }}>
-            Registro blockchain
+            Registro de diagnosticos
           </h1>
-          <div style={{ background: 'rgba(167,139,250,0.1)', border: '1px solid rgba(167,139,250,0.2)', borderRadius: 8, padding: '5px 10px' }}>
-            <span style={{ fontSize: 10, color: theme.colors.violet, fontWeight: 600 }}>INMUTABLE</span>
-          </div>
         </div>
         <p style={{ fontSize: 13, color: theme.colors.muted, marginBottom: 24 }}>
-          Ledger verificado · {mockBlockchainEntries.length} entradas
+          Ledger verificado · {diagnostics?.diagnostics.length} entradas
         </p>
 
         <div style={{ position: 'relative' }}>
           <div style={{ position: 'absolute', left: 11, top: 10, bottom: 10, width: 1, background: 'rgba(167,139,250,0.15)' }} />
-          {mockBlockchainEntries.map((e, i) => (
+          {diagnostics?.diagnostics.map((d, i) => (
             <div key={i} style={{ display: 'flex', gap: 16, marginBottom: 16 }}>
               <div style={{ flexShrink: 0, paddingTop: 2 }}>
                 <div
@@ -39,10 +97,10 @@ export default function Historial() {
               </div>
               <div style={{ flex: 1, background: theme.colors.surface, borderRadius: 12, border: `1px solid ${theme.colors.border}`, padding: '14px' }}>
                 <span className="font-display" style={{ fontSize: 13, fontWeight: 600, color: theme.colors.text, display: 'block', marginBottom: 4 }}>
-                  {e.type}
+                  {d.description}
                 </span>
                 <span className="font-mono" style={{ fontSize: 10, color: theme.colors.muted, display: 'block', marginBottom: 10 }}>
-                  {e.timestamp} · bloque {e.block}
+                 {`Frec. cardíaca: ${d.report_id.heart_rate} · Temperatura corporal: ${d.report_id.temperature}°C · SpO₂: ${d.report_id.oxygenation}`}
                 </span>
                 <div
                   style={{
@@ -55,22 +113,62 @@ export default function Historial() {
                     alignItems: 'center',
                   }}
                 >
-                  <span className="font-mono" style={{ fontSize: 11, color: theme.colors.violetSoft }}>{e.hash}</span>
-                  <span
-                    style={{
-                      background: 'rgba(45,212,191,0.1)',
-                      color: theme.colors.teal,
-                      fontSize: 10,
-                      fontWeight: 600,
-                      padding: '3px 8px',
-                      borderRadius: 6,
-                      border: '1px solid rgba(45,212,191,0.2)',
-                      flexShrink: 0,
-                      marginLeft: 8,
-                    }}
-                  >
-                    verificado
-                  </span>
+                  { validation[d._id] && (
+                    <div>
+                      <span className="font-mono" style={{ fontSize: 11, color: theme.colors.violetSoft }}>{validation[d._id].message}</span>
+                      {validation[d._id].message === 'El diagnostico no ha sido alterado. Integridad confirmada.' && (
+                        <span
+                        style={{
+                          background: 'rgba(45,212,191,0.1)',
+                          color: theme.colors.teal,
+                          fontSize: 10,
+                          fontWeight: 600,
+                          padding: '3px 8px',
+                          borderRadius: 6,
+                          border: '1px solid rgba(45,212,191,0.2)',
+                          flexShrink: 0,
+                          marginLeft: 8,
+                          }}>
+                          validado
+                        </span>
+                      )}
+                      {validation[d._id].message === '¡Alerta! El diagnostico en la base de datos no coincide con la blockchain.' && (
+                        <div
+                        style={{display: 'flex', flexDirection: 'column'}}>
+                          <span
+                          style={{
+                            background: 'rgba(212, 45, 45, 0.1)',
+                            color: theme.colors.danger,
+                            fontSize: 10,
+                            fontWeight: 600,
+                            padding: '3px 8px',
+                            borderRadius: 6,
+                            border: '1px solid rgba(212, 45, 45, 0.2)',
+                            flexShrink: 0,
+                            marginLeft: 8,
+                            marginTop: '10px'
+                            }}>
+                            {`Hash actual: ${validation[d._id].data.hashActual}`}
+                          </span>
+                          <span
+                          style={{
+                            background: 'rgba(212, 45, 45, 0.1)',
+                            color: theme.colors.danger,
+                            fontSize: 10,
+                            fontWeight: 600,
+                            padding: '3px 8px',
+                            borderRadius: 6,
+                            border: '1px solid rgba(212, 45, 45, 0.2)',
+                            flexShrink: 0,
+                            marginLeft: 8,
+                            marginTop: '10px'
+                            }}>
+                            {`Hash de la blockchain: ${validation[d._id].data.hashBlockchain}`}
+                          </span>                          
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
