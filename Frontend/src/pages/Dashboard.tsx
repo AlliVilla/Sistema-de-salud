@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import EcgLine from '../components/charts/EcgLine'
 import TempTrendChart from '../components/charts/TempTrendChart'
-import { PATIENT, mockVitals } from '../lib/mock'
 import { theme } from '../theme'
+import { getMe } from '../lib/api/users'
 import type { BleReading, BluetoothState, BleDevice } from '../lib/bluetooth'
 import { registerReport } from '../lib/api/reports'
 import { generateDiagnostics } from '../lib/api/diagnostics'
@@ -23,7 +23,7 @@ interface DashboardProps {
 interface Report {
   id: string,
   user_id: string,
-  heart_rate?: number, 
+  heart_rate?: number,
   temperature?: number,
   oxygenation?: number
   createdAt: string
@@ -38,6 +38,7 @@ export default function Dashboard({ lectura, historial, btState, connectedName, 
   const [modalOpen, setModalOpen] = useState(false)
   const [scanning, setScanning] = useState(false)
   const [connectingId, setConnectingId] = useState<string | null>(null)
+  const [userName, setUserName] = useState<string | null>(null)
   const { addDiagnostic } = useDiagnostics()
   const [sendReport, setSendReport] = useState<ReportResponse | null>(null)
   const lastReportedTimestamp = useRef<number | null>(null)
@@ -45,7 +46,6 @@ export default function Dashboard({ lectura, historial, btState, connectedName, 
   const heartRate = lectura?.hrValid ? lectura.hr : "--"
   const spo2 = lectura?.spo2Valid ? lectura.spo2 : "--"
   const tempDisplay = lectura?.temp != null ? lectura.temp.toFixed(1) : "--"
-  const syncedAt = lectura ? new Date(lectura.timestamp).toLocaleTimeString() : mockVitals.syncedAt
   const hrLive = !!lectura?.hrValid
   const spo2Live = !!lectura?.spo2Valid
 
@@ -59,6 +59,14 @@ export default function Dashboard({ lectura, historial, btState, connectedName, 
 
   const openModal = () => setModalOpen(true)
   const closeModal = () => { setModalOpen(false); setConnectingId(null) }
+
+  useEffect(() => {
+    let active = true
+    getMe()
+      .then((user) => { if (active) setUserName(user.name) })
+      .catch(() => { if (active) setUserName(null) })
+    return () => { active = false }
+  }, [])
 
   const handleDevicePick = async (device: BleDevice) => {
     if (connectingId) return
@@ -81,32 +89,32 @@ export default function Dashboard({ lectura, historial, btState, connectedName, 
   }
 
   useEffect(() => {
-    const handleDiagnostic = async() => {
+    const handleDiagnostic = async () => {
       const report = sendReport?.report
-      if(!report?.id) return
-      if(!report.heart_rate || !report.temperature || !report.oxygenation) return
+      if (!report?.id) return
+      if (!report.heart_rate || !report.temperature || !report.oxygenation) return
 
-      try{
+      try {
         const response = await generateDiagnostics(sendReport.report._id)
-        if(!response.diagnostic){
+        if (!response.diagnostic) {
           addDiagnostic(response.diagnostic)
         }
-      }catch(error){
+      } catch (error) {
         console.error(`Error: ${error}`)
       }
     }
     handleDiagnostic()
-  }, [sendReport, ])
+  }, [sendReport,])
 
   useEffect(() => {
-    if(!lectura) return;
-    if(!lectura.hr || lectura.temp == null || !lectura.spo2) return;
-    if(lastReportedTimestamp.current === Number(lectura.timestamp)) return;
+    if (!lectura) return;
+    if (!lectura.hr || lectura.temp == null || !lectura.spo2) return;
+    if (lastReportedTimestamp.current === Number(lectura.timestamp)) return;
 
     lastReportedTimestamp.current = Number(lectura.timestamp)
 
-    const getVitals = async() => {
-      try{
+    const getVitals = async () => {
+      try {
         const response = await registerReport({
           heart_rate: lectura.hr,
           temperature: lectura.temp,
@@ -116,7 +124,7 @@ export default function Dashboard({ lectura, historial, btState, connectedName, 
           lastReportedTimestamp.current = null
         })
         setSendReport(response)
-      }catch(error){
+      } catch (error) {
         console.log(`Error: ${error}`)
         lastReportedTimestamp.current = null
       }
@@ -132,7 +140,7 @@ export default function Dashboard({ lectura, historial, btState, connectedName, 
           <div>
             <p style={{ fontSize: 13, color: theme.colors.muted, marginBottom: 4 }}>Buenos días,</p>
             <h1 className="font-display" style={{ fontSize: 22, fontWeight: 700, color: theme.colors.text, letterSpacing: '-0.02em' }}>
-              {PATIENT.name}
+              {userName ?? 'Paciente'}
             </h1>
           </div>
           <div
@@ -421,7 +429,7 @@ export default function Dashboard({ lectura, historial, btState, connectedName, 
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
               <p style={{ fontSize: 12, color: theme.colors.muted, marginBottom: 4 }}>Última sincronización</p>
-              <p className="font-mono" style={{ fontSize: 13, color: theme.colors.text }}>{syncedAt}</p>
+
             </div>
             <span
               style={{
