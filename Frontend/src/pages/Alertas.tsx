@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import EcgLine from '../components/charts/EcgLine'
-import { mockResolvedAlerts } from '../lib/mock'
 import { theme } from '../theme'
 import { useDiagnostics } from '../lib/context/diagnosticsContext'
 
@@ -65,23 +64,6 @@ export default function Alertas() {
           </div>
         )}
 
-        <div style={{ marginTop: activeDiagnostic ? 0 : 8 }}>
-          {mockResolvedAlerts.map((a) => (
-            <div key={a.id} style={{ background: theme.colors.surface, borderRadius: 12, border: `1px solid ${theme.colors.borderMuted}`, padding: '14px 16px', marginBottom: 8, opacity: 0.55 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                <span style={{ fontSize: 14, color: theme.colors.text, fontWeight: 500 }}>{a.title}</span>
-                <span style={{ background: 'rgba(127,160,156,0.12)', color: theme.colors.muted, fontSize: 10, fontWeight: 600, padding: '3px 8px', borderRadius: 20 }}>
-                  resuelta
-                </span>
-              </div>
-              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                <span className="font-mono" style={{ fontSize: 11, color: theme.colors.muted }}>{a.timestamp}</span>
-                <span style={{ color: theme.colors.border }}>·</span>
-                <span style={{ fontSize: 12, color: theme.colors.muted }}>{a.description}</span>
-              </div>
-            </div>
-          ))}
-        </div>
       </div>
     </div>
   )

@@ -59,6 +59,14 @@ export async function loginUser(email: string, password: string): Promise<Valida
   })
 }
 
+export async function getMe(): Promise<UserResponse> {
+  const res = await api<{ user: UserResponse & { _id?: string } }>(ENDPOINTS.me, {})
+  return {
+    ...res.user,
+    id: res.user.id ?? res.user._id ?? '',
+  }
+}
+
 export async function validateEmail(token: string): Promise<ConfirmationResponse>{
   return api<ConfirmationResponse>(ENDPOINTS.confirm(token), {})
 }
