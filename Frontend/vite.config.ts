@@ -35,7 +35,7 @@ export default defineConfig(({ mode, command }) => {
       }),
       react(),
       tailwindcss(),
-      ...(isDevServer ? [basicSsl()] : []),
+      ...(isDevServer && !hasCert? [basicSsl()] : []),
       figmaSiteConfiguration(siteConfiguration),
       figmaErrorOverlayReplay(),
       figmaReactRefreshBoundaryFallback(),

@@ -20,13 +20,16 @@
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "express-rate-limit": "^8.7.0",
+    "fabric-ca-client": "^2.2.20",
     "fabric-network": "^2.2.20",
-    "mongoose": "^9.9.1",
+    "mongoose": "^9.9.4",
     "ngrok": "5.0.0-beta.2",
-    "nodemailer": "^9.0.5",
-    "nodemon": "^3.1.14",
+    "nodemailer": "^9.1.1",
     "swagger-jsdoc": "^6.3.0",
     "swagger-ui-express": "^5.0.1",
     "twilio": "^6.1.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
   }
 }
