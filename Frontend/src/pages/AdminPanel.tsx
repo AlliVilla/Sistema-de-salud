@@ -12,7 +12,7 @@ import {
 
 type Filter = "todos" | "Client" | "Admin"
 
-const FILTERS: { key: Filter label: string }[] = [
+const FILTERS: { key: Filter; label: string }[] = [
   { key: "todos", label: "Todos" },
   { key: "Client", label: "Clientes" },
   { key: "Admin", label: "Administradores" },

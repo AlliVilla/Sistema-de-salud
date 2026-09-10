@@ -5,7 +5,7 @@ import { theme } from "../theme"
 import { getMe } from "../lib/api/users"
 import type { BleReading, BluetoothState, BleDevice } from "../lib/bluetooth"
 import { registerReport } from "../lib/api/reports"
-import { generateDiagnostics } from "../lib/api/diagnostics"
+import { generateDiagnostics, normalizeDiagnostic } from "../lib/api/diagnostics"
 import { useDiagnostics } from "../lib/context/diagnosticsContext"
 import TelegramNudge from "../components/telegram/TelegramNudge"
 
@@ -128,16 +128,17 @@ export default function Dashboard({
         return
 
       try {
-        const response = await generateDiagnostics(sendReport.report._id)
-        if (!response.diagnostic) {
-          addDiagnostic(response.diagnostic)
+        const response = await generateDiagnostics(report.id)
+        const created = response.data?.diagnostic ?? response.diagnostic
+        if (created) {
+          addDiagnostic(normalizeDiagnostic(created))
         }
       } catch (error) {
         console.error(`Error: ${error}`)
       }
     }
     handleDiagnostic()
-  }, [sendReport])
+  }, [sendReport, addDiagnostic])
 
   useEffect(() => {
     if (!lectura) return
@@ -147,18 +148,17 @@ export default function Dashboard({
     lastReportedTimestamp.current = Number(lectura.timestamp)
 
     const getVitals = async () => {
+      const { hr, temp, spo2 } = lectura
+      if (temp == null) return
       try {
         const response = await registerReport({
-          heart_rate: lectura.hr,
-          temperature: lectura.temp,
-          oxygenation: lectura.spo2,
-        }).catch((error) => {
-          console.log(`Ocurio un error: ${error}`)
-          lastReportedTimestamp.current = null
+          heart_rate: hr,
+          temperature: temp,
+          oxygenation: spo2,
         })
         setSendReport(response)
       } catch (error) {
-        console.log(`Error: ${error}`)
+        console.log(`Ocurrio un error: ${error}`)
         lastReportedTimestamp.current = null
       }
     }

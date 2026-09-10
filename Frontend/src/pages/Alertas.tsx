@@ -4,7 +4,7 @@ import { theme } from '../theme'
 import { useDiagnostics } from '../lib/context/diagnosticsContext'
 
 export default function Alertas() {
-  const { diagnostics } = useDiagnostics()
+  const { diagnostics, loading, error, refresh } = useDiagnostics()
   const [reviewedIds, setReviewedIds] = useState<Set<string>>(new Set())
 
   const activeDiagnostic = diagnostics.find((d) => !reviewedIds.has(d.id))
@@ -14,11 +14,39 @@ export default function Alertas() {
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       <EcgLine color={theme.colors.danger} />
       <div style={{ flex: 1, overflow: 'auto', padding: '20px 20px 32px' }}>
-        <h1 className="font-display" style={{ fontSize: 22, fontWeight: 700, color: theme.colors.text, letterSpacing: '-0.02em', marginBottom: 6 }}>
-          Alerta
-        </h1>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
+          <h1 className="font-display" style={{ fontSize: 22, fontWeight: 700, color: theme.colors.text, letterSpacing: '-0.02em' }}>
+            Alerta
+          </h1>
+          <button
+            onClick={() => void refresh()}
+            disabled={loading}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              background: 'transparent',
+              border: `1px solid ${theme.colors.border}`,
+              borderRadius: 10,
+              padding: '8px 12px',
+              color: theme.colors.muted,
+              fontFamily: "'Space Grotesk', sans-serif",
+              fontWeight: 500,
+              fontSize: 12,
+              cursor: loading ? 'default' : 'pointer',
+              opacity: loading ? 0.6 : 1,
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className={loading ? 'spin' : ''}>
+              <polyline points="23 4 23 10 17 10" />
+              <polyline points="1 20 1 14 7 14" />
+              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+            </svg>
+            {loading ? 'Actualizando…' : 'Actualizar'}
+          </button>
+        </div>
         <p style={{ fontSize: 13, color: theme.colors.muted, marginBottom: 20 }}>
-          {activeDiagnostic ? '' : 'Aun no hay una alerta'}
+          {error ? error : activeDiagnostic ? '' : 'Aun no hay una alerta'}
         </p>
 
         {activeDiagnostic && (

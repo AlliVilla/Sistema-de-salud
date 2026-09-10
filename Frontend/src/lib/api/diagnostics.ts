@@ -1,47 +1,94 @@
 import { api } from "./client"
 import { ENDPOINTS } from "./endpoints"
-import { Diagnostic } from "../lib/context/diagnosticsContext"
 
-interface CreateDiagnostic {
-    report_id: Number,
-    description: String
+export interface ApiReport {
+  _id: string
+  user_id?: string
+  heart_rate: number
+  temperature: number
+  oxygenation: number
+  createdAt?: string
 }
 
-interface Report{
-    heart_rate: Number,
-    temperature: Number,
-    oxygenation: Number
+export interface ApiDiagnostic {
+  _id: string
+  report_id: ApiReport | string
+  hash: string
+  description: string
+  createdAt?: string
 }
 
-interface Diagnostic {
-    _id: String,
-    description: String,
-    hash: String,
-    report_id: Report
+export interface Diagnostic {
+  id: string
+  report_id: string
+  hash: string
+  description: string
+  createdAt?: string
 }
 
-interface ValidateDiagnosticResponse {
-    message: String,
-    integro: Boolean, 
-    hashActual: String,
-    hashBlockchain: String
+export interface GetDiagnosticResponse {
+  diagnostics: ApiDiagnostic[]
 }
 
-interface GetDiagnosticResponse {
-    diagnostics: Diagnostic[]
+export interface ValidateDiagnosticResponse {
+  message: string
+  integro?: boolean
+  hashActual?: string
+  hashBlockchain?: string
+  data?: {
+    integro: boolean
+    hashActual: string
+    hashBlockchain: string
+    diagnostic: ApiDiagnostic
+  }
 }
 
-export async function getDiagnostics(): Promise<GetDiagnosticResponse>{
-    return await api<GetDiagnosticResponse>(ENDPOINTS.getDiagnostics, {})
+export interface GenerateDiagnosticResponse {
+  message: string
+  hash?: string
+  txHash?: string
+  diagnostic?: ApiDiagnostic | null
+  data?: {
+    diagnostic?: ApiDiagnostic | null
+    blockchain?: unknown
+    blockchainError?: string | null
+    telegramError?: string | null
+  }
 }
 
-export async function validateDiagnostics(id: string): Promise<ValidateDiagnosticResponse> {
-    return await api<ValidateDiagnosticResponse>(ENDPOINTS.validateDiagnostics(id), {})
+export function normalizeDiagnostic(d: ApiDiagnostic): Diagnostic {
+  const reportId =
+    typeof d.report_id === "string" ? d.report_id : d.report_id?._id ?? ""
+  return {
+    id: d._id,
+    report_id: reportId,
+    hash: d.hash,
+    description: d.description,
+    createdAt: d.createdAt,
+  }
 }
 
-export async function generateDiagnostics(report_id: string): Promise<Diagnostic> {
-    return await api<Diagnostic>(ENDPOINTS.generateDiagnostics(report_id), {
-        method: 'POST',
-        credential: 'include'
-    })
+export async function getDiagnostics(): Promise<GetDiagnosticResponse> {
+  return await api<GetDiagnosticResponse>(ENDPOINTS.getDiagnostics, {})
+}
+
+export async function validateDiagnostics(
+  id: string,
+): Promise<ValidateDiagnosticResponse> {
+  return await api<ValidateDiagnosticResponse>(
+    ENDPOINTS.validateDiagnostics(id),
+    {},
+  )
+}
+
+export async function generateDiagnostics(
+  report_id: string,
+): Promise<GenerateDiagnosticResponse> {
+  return await api<GenerateDiagnosticResponse>(
+    ENDPOINTS.generateDiagnostics(report_id),
+    {
+      method: "POST",
+      credentials: "include",
+    },
+  )
 }
