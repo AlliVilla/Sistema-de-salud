@@ -89,6 +89,17 @@ body {
   animation: blink 1.4s ease-in-out infinite;
 }
 
+/* Refresh icon spin */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.spin {
+  animation: spin 0.9s linear infinite;
+  transform-origin: center;
+}
+
 /* Heartbeat number pulse */
 @keyframes heartbeat {
   0%, 100% { transform: scale(1); }
