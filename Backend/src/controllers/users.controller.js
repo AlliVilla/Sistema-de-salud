@@ -2,6 +2,7 @@ import User from "../models/users.js"
 import bycrypt from 'bcryptjs'
 import crypto from "crypto"
 import transporter from "../middlewares/email.js"
+import { confirmationEmail } from "../templates/emails.js"
 import { signToken } from "../middlewares/auth.middleware.js"
 import { mapMongoError } from "../utils/errors.js"
 
@@ -37,26 +38,7 @@ const createUser = async (req, res) => {
             await transporter.sendMail({
                 from: `"Grupo 4 Vanguardia" <${process.env.EMAIL_USER}>`,
                 to: email,
-                subject: "Confirma tu correo electrónico",
-                html: `
-                        <h2>Bienvenido a Falta el nombre aqui</h2>
-
-                        <p>
-                            Tu cuenta ha sido creada correctamente.
-                        </p>
-
-                        <h1>
-                            ${confirmationToken}
-                        </h1>
-
-                        <p>
-                            Este es tu token para confirmar tu correo electrónico.
-                        </p>
-
-                        <p>
-                            Este token expirará en 15 minutos.
-                        </p>
-                    `
+                ...confirmationEmail({ name, token: confirmationToken })
             });
 
             return res.status(201).send({
@@ -121,26 +103,7 @@ const createUser = async (req, res) => {
         await transporter.sendMail({
             from: `"Grupo 4 Vanguardia" <${process.env.EMAIL_USER}>`,
             to: email,
-            subject: "Confirma tu correo electrónico",
-            html: `
-                    <h2>Bienvenido a Falta el nombre aqui</h2>
-
-                    <p>
-                        Tu cuenta ha sido creada correctamente.
-                    </p>
-
-                    <h1>
-                        ${confirmationToken}
-                    </h1>
-
-                    <p>
-                        Este es tu token para confirmar tu correo electrónico.
-                    </p>
-
-                    <p>
-                        Este token expirará en 15 minutos.
-                    </p>
-                `
+            ...confirmationEmail({ name, token: confirmationToken })
         });
 
         res.status(201).send({ message: "Usuario creado correctamente, esperando confirmacion de email", user: sendUser });
@@ -192,14 +155,26 @@ const editUser = async (req, res) => {
             return res.status(403).send({ message: "No tienes permiso para modificar este usuario", result: false })
         }
 
-        const { name, phone, emergency_phone, address, status, age, condition } = req.body;
-        const fields = { name, phone, emergency_phone, address, status, age, condition };
+        const { name, phone, emergency_phone, address, status, age, condition, diagnosis_frequency } = req.body;
+        const fields = { name, phone, emergency_phone, address, status, age, condition, diagnosis_frequency };
         const update = Object.fromEntries(
             Object.entries(fields).filter(([, value]) => value !== undefined)
         );
 
         if (Object.keys(update).length === 0) {
             return res.status(400).send({ message: "No hay campos para actualizar", result: false })
+        }
+
+        // La frecuencia de diagnóstico debe ser un entero entre 1 y 100.
+        if (update.diagnosis_frequency !== undefined) {
+            const frequency = Number(update.diagnosis_frequency);
+            if (!Number.isInteger(frequency) || frequency < 1 || frequency > 100) {
+                return res.status(400).send({
+                    message: "La frecuencia de diagnóstico debe ser un entero entre 1 y 100",
+                    result: false
+                })
+            }
+            update.diagnosis_frequency = frequency;
         }
 
         const updatedUser = await User.findByIdAndUpdate(id, update, { new: true, runValidators: true })

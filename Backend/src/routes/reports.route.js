@@ -120,7 +120,11 @@
  * /report/create:
  *   post:
  *     summary: Crear un reporte
- *     description: Crea un nuevo reporte de signos vitales asociado automáticamente al usuario autenticado.
+ *     description: >
+ *       Crea un nuevo reporte de signos vitales asociado automáticamente al usuario autenticado.
+ *       Cada reporte incrementa el contador del usuario; al alcanzar `diagnosis_frequency` se
+ *       promedian los últimos N reportes y se genera un diagnóstico automático en segundo plano
+ *       (sin bloquear esta respuesta).
  *     tags: [Reports]
  *     security:
  *       - bearerAuth: []

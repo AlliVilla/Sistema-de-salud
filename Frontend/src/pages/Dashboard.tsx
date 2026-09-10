@@ -5,8 +5,6 @@ import { theme } from "../theme"
 import { getMe } from "../lib/api/users"
 import type { BleReading, BluetoothState, BleDevice } from "../lib/bluetooth"
 import { registerReport } from "../lib/api/reports"
-import { generateDiagnostics, normalizeDiagnostic } from "../lib/api/diagnostics"
-import { useDiagnostics } from "../lib/context/diagnosticsContext"
 import TelegramNudge from "../components/telegram/TelegramNudge"
 
 const BLE_TABLE_ROWS = 15
@@ -19,20 +17,6 @@ interface DashboardProps {
   knownDevices: BleDevice[]
   connectToDevice: (device: BleDevice) => Promise<boolean>
   scanNewDevice: () => Promise<BleDevice | null>
-}
-
-interface Report {
-  id: string
-  user_id: string
-  heart_rate?: number
-  temperature?: number
-  oxygenation?: number
-  createdAt: string
-}
-
-interface ReportResponse {
-  message: string
-  report: Report
 }
 
 export default function Dashboard({
@@ -48,8 +32,6 @@ export default function Dashboard({
   const [scanning, setScanning] = useState(false)
   const [connectingId, setConnectingId] = useState<string | null>(null)
   const [userName, setUserName] = useState<string | null>(null)
-  const { addDiagnostic } = useDiagnostics()
-  const [sendReport, setSendReport] = useState<ReportResponse | null>(null)
   const lastReportedTimestamp = useRef<number | null>(null)
 
   const heartRate = lectura?.hrValid ? lectura.hr : "--"
@@ -121,26 +103,6 @@ export default function Dashboard({
   }
 
   useEffect(() => {
-    const handleDiagnostic = async () => {
-      const report = sendReport?.report
-      if (!report?.id) return
-      if (!report.heart_rate || !report.temperature || !report.oxygenation)
-        return
-
-      try {
-        const response = await generateDiagnostics(report.id)
-        const created = response.data?.diagnostic ?? response.diagnostic
-        if (created) {
-          addDiagnostic(normalizeDiagnostic(created))
-        }
-      } catch (error) {
-        console.error(`Error: ${error}`)
-      }
-    }
-    handleDiagnostic()
-  }, [sendReport, addDiagnostic])
-
-  useEffect(() => {
     if (!lectura) return
     if (!lectura.hr || lectura.temp == null || !lectura.spo2) return
     if (lastReportedTimestamp.current === Number(lectura.timestamp)) return
@@ -151,12 +113,12 @@ export default function Dashboard({
       const { hr, temp, spo2 } = lectura
       if (temp == null) return
       try {
-        const response = await registerReport({
+        // El backend genera el diagnóstico automáticamente cada N reportes.
+        await registerReport({
           heart_rate: hr,
           temperature: temp,
           oxygenation: spo2,
         })
-        setSendReport(response)
       } catch (error) {
         console.log(`Ocurrio un error: ${error}`)
         lastReportedTimestamp.current = null

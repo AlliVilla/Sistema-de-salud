@@ -3,7 +3,7 @@ import { useState, useEffect } from "react"
 import { useNavigate, useLocation } from "react-router-dom"
 import EcgLine from "../components/charts/EcgLine"
 import TelegramConnectCard from "../components/profile/TelegramConnectCard"
-import { getMe } from "../lib/api/users"
+import { getMe, updateUser } from "../lib/api/users"
 import type { UserResponse } from "../lib/api/users"
 import { clearSession } from "../lib/auth"
 import { theme } from "../theme"
@@ -114,12 +114,17 @@ export default function Perfil({
   const navigate = useNavigate()
   const location = useLocation()
   const [user, setUser] = useState<UserResponse | null>(null)
+  const [frequency, setFrequency] = useState<number>(10)
+  const [savingFrequency, setSavingFrequency] = useState(false)
+  const [frequencyMessage, setFrequencyMessage] = useState<string | null>(null)
 
   useEffect(() => {
     let active = true
     getMe()
       .then((u) => {
-        if (active) setUser(u)
+        if (!active) return
+        setUser(u)
+        setFrequency(u.diagnosis_frequency ?? 10)
       })
       .catch(() => {
         if (active) setUser(null)
@@ -151,6 +156,30 @@ export default function Perfil({
     if (item.action !== "logout") return
     clearSession()
     navigate("/login", { replace: true })
+  }
+
+  const handleSaveFrequency = async () => {
+    if (!user) return
+    const value = Number(frequency)
+    if (!Number.isInteger(value) || value < 1 || value > 100) {
+      setFrequencyMessage("Debe ser un número entero entre 1 y 100")
+      return
+    }
+
+    setSavingFrequency(true)
+    setFrequencyMessage(null)
+    try {
+      const updated = await updateUser(user.id, { diagnosis_frequency: value })
+      setUser(updated)
+      setFrequency(updated.diagnosis_frequency ?? value)
+      setFrequencyMessage("Frecuencia actualizada correctamente")
+    } catch (error) {
+      setFrequencyMessage(
+        error instanceof Error ? error.message : "No se pudo actualizar",
+      )
+    } finally {
+      setSavingFrequency(false)
+    }
   }
 
   return (
@@ -308,6 +337,92 @@ export default function Perfil({
         </div>
 
         <TelegramConnectCard />
+
+        <div
+          style={{
+            background: theme.colors.surface,
+            borderRadius: theme.radius.card,
+            border: `1px solid ${theme.colors.border}`,
+            padding: 16,
+            marginBottom: 16,
+          }}
+        >
+          <span
+            className="font-mono"
+            style={{
+              fontSize: 11,
+              color: theme.colors.muted,
+              textTransform: "uppercase",
+              letterSpacing: "0.08em",
+              display: "block",
+              marginBottom: 6,
+            }}
+          >
+            Frecuencia de diagnóstico
+          </span>
+          <p
+            style={{
+              fontSize: 12,
+              color: theme.colors.muted,
+              marginBottom: 12,
+              lineHeight: 1.5,
+            }}
+          >
+            Se promedian los últimos N registros y se genera un diagnóstico
+            automático. Valor entre 1 y 100.
+          </p>
+          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+            <input
+              type="number"
+              min={1}
+              max={100}
+              value={frequency}
+              onChange={(e) => setFrequency(Number(e.target.value))}
+              className="font-mono"
+              style={{
+                width: 88,
+                background: "#122427",
+                border: `1px solid ${theme.colors.border}`,
+                borderRadius: 10,
+                padding: "10px 12px",
+                color: theme.colors.text,
+                fontSize: 14,
+                outline: "none",
+              }}
+            />
+            <button
+              onClick={handleSaveFrequency}
+              disabled={savingFrequency || !user}
+              style={{
+                flex: 1,
+                background: "rgba(45,212,191,0.08)",
+                border: "1px solid rgba(45,212,191,0.2)",
+                borderRadius: 10,
+                padding: "11px 14px",
+                color: theme.colors.teal,
+                fontFamily: "'Space Grotesk', sans-serif",
+                fontWeight: 600,
+                fontSize: 13,
+                cursor: savingFrequency || !user ? "default" : "pointer",
+              }}
+            >
+              {savingFrequency ? "Guardando…" : "Guardar"}
+            </button>
+          </div>
+          {frequencyMessage && (
+            <p
+              style={{
+                fontSize: 11,
+                color: frequencyMessage.startsWith("Frecuencia")
+                  ? theme.colors.green
+                  : theme.colors.danger,
+                marginTop: 10,
+              }}
+            >
+              {frequencyMessage}
+            </p>
+          )}
+        </div>
 
         <div
           style={{

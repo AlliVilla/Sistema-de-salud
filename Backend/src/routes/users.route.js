@@ -293,6 +293,14 @@
  *                 type: string
  *                 description: Condición médica del usuario.
  *                 example: Hipertensión
+ *               diagnosis_frequency:
+ *                 type: integer
+ *                 minimum: 1
+ *                 maximum: 100
+ *                 description: >
+ *                   Cada cuántos reportes se promedian los últimos N registros y se genera
+ *                   un diagnóstico automático.
+ *                 example: 10
  *     responses:
  *       200:
  *         description: Usuario actualizado correctamente.
