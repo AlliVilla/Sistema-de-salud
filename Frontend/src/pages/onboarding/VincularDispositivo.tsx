@@ -264,6 +264,28 @@ export default function VincularDispositivo({ btState, knownDevices, connectedNa
         >
           {!btSupported ? 'Bluetooth no disponible' : scanning ? 'Buscando dispositivos…' : isConnected ? 'Dispositivo vinculado' : 'Escanear nuevos dispositivos'}
         </button>
+
+        <button
+          onClick={() => navigate('/dashboard')}
+          disabled={scanning || isConnecting}
+          style={{
+            background: 'transparent',
+            border: `1px solid ${theme.colors.border}`,
+            borderRadius: theme.radius.button,
+            padding: '14px',
+            color: theme.colors.muted,
+            fontFamily: "'Space Grotesk', sans-serif",
+            fontWeight: 600,
+            fontSize: 15,
+            cursor: 'pointer',
+            transition: 'all 0.2s',
+            letterSpacing: '-0.01em',
+            marginTop: 10,
+            opacity: scanning || isConnecting ? 0.5 : 1,
+          }}
+        >
+          Más tarde
+        </button>
       </div>
     </div>
   )
