@@ -1,7 +1,9 @@
 import type { ReactNode } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import EcgLine from '../components/charts/EcgLine'
-import { PATIENT } from '../lib/mock'
+import { getMe } from '../lib/api/users'
+import type { UserResponse } from '../lib/api/users'
 import { clearSession } from '../lib/auth'
 import { theme } from '../theme'
 
@@ -57,13 +59,41 @@ const settingsItems: SettingsItem[] = [
   },
 ]
 
-const dataRows = [
-  { label: 'Edad', value: `${PATIENT.age} años` },
-  { label: 'Condición', value: PATIENT.condition },
-]
+function getInitials(name: string): string {
+  return name
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0].toUpperCase())
+    .join('')
+}
 
-export default function Perfil() {
+const dataLabels = {
+  age: 'Edad',
+  condition: 'Condición',
+  device: 'Dispositivo',
+} as const
+
+export default function Perfil({ connectedName }: { connectedName: string | null }) {
   const navigate = useNavigate()
+  const [user, setUser] = useState<UserResponse | null>(null)
+
+  useEffect(() => {
+    let active = true
+    getMe()
+      .then((u) => { if (active) setUser(u) })
+      .catch(() => { if (active) setUser(null) })
+    return () => { active = false }
+  }, [])
+
+  const dataRows = [
+    { label: dataLabels.age, value: user ? `${user.age} años` : '—' },
+    { label: dataLabels.condition, value: user ? user.condition.join(', ') : '—' },
+  ]
+
+  const deviceName = connectedName ?? 'Sin dispositivo'
+  const isDeviceConnected = !!connectedName
 
   const handleItemClick = (item: SettingsItem) => {
     if (item.action !== 'logout') return
@@ -90,13 +120,15 @@ export default function Perfil() {
             }}
           >
             <span className="font-display" style={{ fontSize: 26, fontWeight: 700, color: theme.colors.teal, letterSpacing: '-0.02em' }}>
-              {PATIENT.initials}
+              {user ? getInitials(user.name) : '•'}
             </span>
           </div>
           <h2 className="font-display" style={{ fontSize: 20, fontWeight: 700, color: theme.colors.text, letterSpacing: '-0.02em', marginBottom: 6 }}>
-            {PATIENT.name}
+            {user?.name ?? 'Paciente'}
           </h2>
-          <span style={{ fontSize: 12, color: theme.colors.muted }}>{PATIENT.subline}</span>
+          <span style={{ fontSize: 12, color: theme.colors.muted }}>
+            {user ? (user.condition.length > 0 ? user.condition.join(' · ') : user.email) : ''}
+          </span>
         </div>
 
         <div style={{ background: theme.colors.surface, borderRadius: theme.radius.card, border: `1px solid ${theme.colors.border}`, padding: '6px 0', marginBottom: 16 }}>
@@ -120,23 +152,25 @@ export default function Perfil() {
 
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '13px 16px', borderTop: `1px solid ${theme.colors.borderSubtle}` }}>
             <span className="font-mono" style={{ fontSize: 11, color: theme.colors.muted, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-              Dispositivo
+              {dataLabels.device}
             </span>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 14, color: theme.colors.text, fontWeight: 500 }}>{PATIENT.device}</span>
-              <span
-                style={{
-                  background: 'rgba(45,212,191,0.1)',
-                  color: theme.colors.teal,
-                  fontSize: 10,
-                  fontWeight: 600,
-                  padding: '3px 8px',
-                  borderRadius: 20,
-                  border: '1px solid rgba(45,212,191,0.2)',
-                }}
-              >
-                conectado
-              </span>
+              <span style={{ fontSize: 14, color: theme.colors.text, fontWeight: 500 }}>{deviceName}</span>
+              {isDeviceConnected && (
+                <span
+                  style={{
+                    background: 'rgba(45,212,191,0.1)',
+                    color: theme.colors.teal,
+                    fontSize: 10,
+                    fontWeight: 600,
+                    padding: '3px 8px',
+                    borderRadius: 20,
+                    border: '1px solid rgba(45,212,191,0.2)',
+                  }}
+                >
+                  conectado
+                </span>
+              )}
             </div>
           </div>
         </div>

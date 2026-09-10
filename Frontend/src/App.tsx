@@ -58,7 +58,7 @@ export default function App() {
               <Route path="/dashboard" element={<Dashboard lectura={ultimaLectura} historial={historial} btState={btState} connectedName={connectedName} knownDevices={knownDevices} connectToDevice={connectToDevice} scanNewDevice={scanNewDevice} />} />
               <Route path="/alertas" element={<Alertas />} />
               <Route path="/historial" element={<Blockchain />} />
-              <Route path="/perfil" element={<Perfil />} />
+              <Route path="/perfil" element={<Perfil connectedName={connectedName} />} />
             </Route>
             </Route>
             
