@@ -26,6 +26,7 @@ export default function RegistroPaciente() {
   })
   const [loading, setLoading] = useState(false)
   const [otroDetalle, setOtroDetalle] = useState('')
+  const [otrasCondiciones, setOtrasCondiciones] = useState<string[]>([])
   const [error, setError] = useState<string | null>(null)
 
   const set = (k: keyof PatientProfile) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
@@ -41,6 +42,16 @@ export default function RegistroPaciente() {
     })
     if(newCondition === 'Otro') setOtroDetalle('')
   }
+
+  const addOtro = () => {
+    const value = otroDetalle.trim()
+    if (!value) return
+    setOtrasCondiciones((list) => (list.includes(value) ? list : [...list, value]))
+    setOtroDetalle('')
+  }
+
+  const removeOtro = (condicion: string) =>
+    setOtrasCondiciones((list) => list.filter((c) => c !== condicion))
 
   const inputStyle: React.CSSProperties = {
     width: '100%',
@@ -71,7 +82,7 @@ export default function RegistroPaciente() {
     const age = Number(form.edad)
     if (!form.edad || Number.isNaN(age) || age < 0 || age > 130) return 'Ingresa una edad válida (0–130).'
     if (form.condiciones.length === 0) return 'Selecciona una condición médica.'
-    if(form.condiciones.includes('Otro') && !otroDetalle.trim()) return 'Especifique su condición medica.'
+    if(form.condiciones.includes('Otro') && otrasCondiciones.length === 0) return 'Agrega al menos una condición médica.'
     if (!/^\S+@\S+\.\S+$/.test(form.correo)) return 'Ingresa un correo electrónico válido.'
     if (form.contrasena.length < 8) return 'La contraseña debe tener al menos 8 caracteres.'
     if (digits(form.telefono).length !== 8) return 'El teléfono debe contener exactamente 8 dígitos.'
@@ -90,7 +101,10 @@ export default function RegistroPaciente() {
     setLoading(true)
     setError(null)
     try {
-      const condicionesFinal = form.condiciones.map((c) => c === 'Otro' ? otroDetalle.trim() : c)
+      const condicionesFinal = form.condiciones.filter((c) => c !== 'Otro')
+      for (const extra of otrasCondiciones) {
+        if (!condicionesFinal.includes(extra)) condicionesFinal.push(extra)
+      }
       await registerUser({
         email: form.correo.trim(),
         password: form.contrasena,
@@ -181,7 +195,70 @@ export default function RegistroPaciente() {
                     {c.name}
                   </label>
                   { c.name === 'Otro' && checked && (
-                    <input value={otroDetalle} onChange={(e) => setOtroDetalle(e.target.value)} placeholder="Especifica tu condición." style={{...inputStyle, marginTop: 8}} />
+                    <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        <input
+                          value={otroDetalle}
+                          onChange={(e) => setOtroDetalle(e.target.value)}
+                          onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addOtro() } }}
+                          placeholder="Especifica una condición"
+                          style={inputStyle}
+                        />
+                        <button
+                          onClick={addOtro}
+                          style={{
+                            flexShrink: 0,
+                            background: theme.colors.teal,
+                            border: 'none',
+                            borderRadius: theme.radius.button,
+                            padding: '0 18px',
+                            color: '#0A1618',
+                            fontFamily: "'Space Grotesk', sans-serif",
+                            fontWeight: 600,
+                            fontSize: 14,
+                            cursor: 'pointer',
+                          }}
+                        >
+                          Agregar
+                        </button>
+                      </div>
+                      {otrasCondiciones.length > 0 && (
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                          {otrasCondiciones.map((cond) => (
+                            <span
+                              key={cond}
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 8,
+                                padding: '6px 12px',
+                                borderRadius: 999,
+                                background: 'rgba(45,212,191,0.12)',
+                                border: `1px solid ${theme.colors.teal}`,
+                                color: theme.colors.teal,
+                                fontFamily: "'Inter', sans-serif",
+                                fontSize: 13,
+                              }}
+                            >
+                              {cond}
+                              <span
+                                onClick={() => removeOtro(cond)}
+                                style={{
+                                  cursor: 'pointer',
+                                  fontWeight: 700,
+                                  fontSize: 14,
+                                  lineHeight: 1,
+                                  color: 'rgba(45,212,191,0.8)',
+                                }}
+                                title="Eliminar"
+                              >
+                                ×
+                              </span>
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   )}
                 </div>
                 )
