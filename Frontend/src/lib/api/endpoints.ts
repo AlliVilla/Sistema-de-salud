@@ -5,6 +5,7 @@ export const ENDPOINTS = {
   register: "/user/create",
   login: "/user/validate",
   me: "/user/me",
+  updateUser: (id: string) => `/user/update/${id}`,
   telegramLink: "/user/telegram/link",
   confirm: (token: string) => `/user/confirm-email/${token}`,
   vitals: "/api/vitals/latest",

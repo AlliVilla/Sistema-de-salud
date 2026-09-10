@@ -53,6 +53,77 @@ async function getOwnedReportIds(userId) {
     return reports.map((r) => r._id);
 }
 
+// Persiste un diagnóstico, lo registra en Hyperledger Fabric y notifica por
+// Telegram. Se usa tanto para el disparo manual (/diagnostic/generate) como
+// para el análisis automático por lotes (analysis.service.js).
+// `report` puede ser un Report real o un Report sintético (promedio).
+const persistDiagnostic = async ({ report, user, hash, description }) => {
+    let gateway;
+    let blockchainRecord = null;
+    let blockchainError = null;
+    let txHash = null;
+
+    const newDiagnostic = new Diagnostic({
+        report_id: report._id,
+        hash,
+        description
+    })
+
+    const saved = await newDiagnostic.save()
+
+    const sendDiagnostic = {
+        id: saved._id,
+        report_id: saved.report_id,
+        hash: saved.hash,
+        description: saved.description
+    }
+
+    try {
+        const conexion = await conectarRed();
+        gateway = conexion.gateway;
+        const { contract } = conexion;
+
+        const transaction = contract.createTransaction("CreateAsset");
+        txHash = transaction.getTransactionId();
+
+        const resultado = await transaction.submit(
+            sendDiagnostic.id.toString(),
+            JSON.stringify({
+                pulse: report.heart_rate,
+                temp: report.temperature,
+                oxygen: report.oxygenation,
+                desc: description,
+                hash
+            })
+        );
+
+        blockchainRecord = JSON.parse(resultado.toString());
+    } catch (bcError) {
+        blockchainError = bcError.message;
+    } finally {
+        if (gateway) gateway.disconnect();
+    }
+
+    let telegramError = null;
+    if (user?.telegramChatId) {
+        try {
+            await telegramService.sendMessage(
+                user.telegramChatId,
+                `Nuevo diagnóstico generado \n\n` +
+                `Hola ${user.name}, \n\n` +
+                `Se ha generado un nuevo diagnóstico médico automáticamente en Poner nombre aqui. \n\n` +
+                `Diagnóstico:\n${description}\n\n` +
+                `La información ha sido registrada y puede ser consultada desde tu historial.`
+            );
+        } catch (error) {
+            telegramError = error.message;
+            console.error("ERROR SENDING TELEGRAM MESSAGE:", error);
+        }
+    }
+
+    return { sendDiagnostic, blockchainRecord, blockchainError, txHash, telegramError };
+};
+
 const createDiagnostic = async(req, res) => {
     let gateway;
     try{
@@ -191,7 +262,6 @@ const getDiagnostic = async(req, res) => {
 }
 
 const generate = async(req, res) => {
-    let gateway
     try{
         const { report_id } = req.params
         if(!mongoose.Types.ObjectId.isValid(report_id)){
@@ -218,67 +288,15 @@ const generate = async(req, res) => {
             return res.status(200).send({message: "No anomaly detected", diagnostic: null})
         }
 
-        let blockchainRecord = null;
-        let blockchainError = null;
-        let txHash = null;
+        const userFound = await User.findOne({ _id: reportFound.user_id }).select("name telegramChatId")
 
-        const newDiagnostic = new Diagnostic({
-            report_id: reportFound._id,
-            hash: result.hash,
-            description: result.description
-        })
-
-        const saved = await newDiagnostic.save()
-
-        const sendDiagnostic = {
-            id: saved._id,
-            report_id: saved.report_id,
-            hash: result.hash,
-            description: saved.description
-        }
-
-        try {
-            const conexion = await conectarRed();
-            gateway = conexion.gateway;
-            const { contract } = conexion;
-
-            const transaction = contract.createTransaction("CreateAsset");
-            txHash = transaction.getTransactionId();
-
-            const resultado = await transaction.submit(
-                sendDiagnostic.id.toString(),
-                JSON.stringify({ 
-                    pulse: reportFound.heart_rate, 
-                    temp: reportFound.temperature, 
-                    oxygen: reportFound.oxygenation,
-                    desc: sendDiagnostic.description,
-                    hash: sendDiagnostic.hash
-                })
-            );
-
-            blockchainRecord = JSON.parse(resultado.toString());
-        } catch (bcError) {
-            blockchainError = bcError.message;
-        }
-
-        // ── Notificación de Telegram ──────────────────────────
-        let telegramError = null;
-        try {
-            const userFound = await User.findOne({ _id: reportFound.user_id }).select("name telegramChatId")
-            if (userFound?.telegramChatId) {
-                await telegramService.sendMessage(
-                    userFound.telegramChatId,
-                    `Nuevo diagnóstico generado \n\n` +
-                    `Hola ${userFound.name}, \n\n` +
-                    `Se ha generado un nuevo diagnóstico médico automáticamente en Poner nombre aqui. \n\n` +
-                    `Diagnóstico:\n${sendDiagnostic.description}\n\n` +
-                    `La información ha sido registrada y puede ser consultada desde tu historial.`
-                );
-            }
-        } catch (error) {
-            telegramError = error.message;
-            console.error("ERROR SENDING TELEGRAM MESSAGE:", error);
-        }
+        const { sendDiagnostic, blockchainRecord, blockchainError, txHash, telegramError } =
+            await persistDiagnostic({
+                report: reportFound,
+                user: userFound,
+                hash: result.hash,
+                description: result.description
+            })
 
         return res.status(201).json({
             message: blockchainError
@@ -303,8 +321,6 @@ const generate = async(req, res) => {
             return res.status(503).send("AI service unavailable")
         }
         return res.status(500).send("Internal server error")
-    } finally {
-        if(gateway) gateway.disconnect();
     }
 }
 
@@ -394,4 +410,4 @@ const verificarIntegridad = async (req, res) => {
     }
 };
 
-export default { createDiagnostic, getDiagnostic, getDiagnostics, generate, verificarIntegridad }
+export default { createDiagnostic, getDiagnostic, getDiagnostics, generate, verificarIntegridad, persistDiagnostic }

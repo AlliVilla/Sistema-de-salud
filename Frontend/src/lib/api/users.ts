@@ -26,6 +26,18 @@ export interface UserResponse {
   age: number
   condition: string[]
   telegramChatId?: string | null
+  diagnosis_frequency?: number
+}
+
+export interface UpdateUserPayload {
+  name?: string
+  phone?: string
+  emergency_phone?: string
+  address?: string
+  status?: boolean
+  age?: number
+  condition?: string[]
+  diagnosis_frequency?: number
 }
 
 interface TelegramLinkResponse {
@@ -85,6 +97,23 @@ export async function validateEmail(
   token: string,
 ): Promise<ConfirmationResponse> {
   return api<ConfirmationResponse>(ENDPOINTS.confirm(token), {})
+}
+
+export async function updateUser(
+  id: string,
+  payload: UpdateUserPayload,
+): Promise<UserResponse> {
+  const res = await api<{ message: string; user: UserResponse & { _id?: string } }>(
+    ENDPOINTS.updateUser(id),
+    {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    },
+  )
+  return {
+    ...res.user,
+    id: res.user.id ?? res.user._id ?? "",
+  }
 }
 
 // Genera un enlace de vinculación de Telegram para el usuario autenticado.
