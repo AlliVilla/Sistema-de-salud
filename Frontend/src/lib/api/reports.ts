@@ -16,9 +16,17 @@ interface Report {
   createdAt: string
 }
 
+export interface Diagnostic {
+  id: string
+  report_id: string
+  hash: string
+  description: string
+}
+
 interface ReportResponse {
   message: string,
-  report: Report
+  report: Report,
+  diagnostic: Diagnostic
 }
 
 export async function registerReport(payload: CreateReport): Promise<ReportResponse> {

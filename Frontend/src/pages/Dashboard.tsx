@@ -6,6 +6,7 @@ import { getMe } from "../lib/api/users"
 import type { BleReading, BluetoothState, BleDevice } from "../lib/bluetooth"
 import { registerReport } from "../lib/api/reports"
 import TelegramNudge from "../components/telegram/TelegramNudge"
+import { toast } from "react-toastify"
 
 const BLE_TABLE_ROWS = 15
 
@@ -114,11 +115,14 @@ export default function Dashboard({
       if (temp == null) return
       try {
         // El backend genera el diagnóstico automáticamente cada N reportes.
-        await registerReport({
+        const response = await registerReport({
           heart_rate: hr,
           temperature: temp,
           oxygenation: spo2,
         })
+        if(response.diagnostic){
+          toast.error("¡Alerta! Se ha detectado una anomalía.")
+        }
       } catch (error) {
         console.log(`Ocurrio un error: ${error}`)
         lastReportedTimestamp.current = null

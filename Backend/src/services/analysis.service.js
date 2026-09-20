@@ -70,6 +70,10 @@ const runScheduledAnalysis = async (userId, frequency) => {
                 telegramError: persisted.telegramError
             }
         );
+
+        const diagnostic = persisted.sendDiagnostic
+
+        return { diagnostic }
     } catch (error) {
         console.error("[analysis] Error en el análisis programado:", error);
     }
