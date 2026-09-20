@@ -7,6 +7,8 @@ import type { BleReading, BluetoothState, BleDevice } from "../lib/bluetooth"
 import { registerReport } from "../lib/api/reports"
 import TelegramNudge from "../components/telegram/TelegramNudge"
 import { toast } from "react-toastify"
+import { useNavigate } from "react-router-dom"
+import { useDiagnostics } from "@/lib/context/diagnosticsContext"
 
 const BLE_TABLE_ROWS = 15
 
@@ -29,11 +31,13 @@ export default function Dashboard({
   connectToDevice,
   scanNewDevice,
 }: DashboardProps) {
+  const { refresh } = useDiagnostics()
   const [modalOpen, setModalOpen] = useState(false)
   const [scanning, setScanning] = useState(false)
   const [connectingId, setConnectingId] = useState<string | null>(null)
   const [userName, setUserName] = useState<string | null>(null)
   const lastReportedTimestamp = useRef<number | null>(null)
+  const navigate = useNavigate()
 
   const heartRate = lectura?.hrValid ? lectura.hr : "--"
   const spo2 = lectura?.spo2Valid ? lectura.spo2 : "--"
@@ -121,7 +125,9 @@ export default function Dashboard({
           oxygenation: spo2,
         })
         if(response.diagnostic){
+          await refresh()
           toast.error("¡Alerta! Se ha detectado una anomalía.")
+          navigate("/alertas")
         }
       } catch (error) {
         console.log(`Ocurrio un error: ${error}`)

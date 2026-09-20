@@ -100,7 +100,7 @@ export default function App() {
             </Route>
           </Route>
         </Routes>
-        <ToastContainer aria-label="Notificaciones"/>
+        <ToastContainer aria-label="Notificaciones" position="top-right" autoClose={4000}/>
       </TelegramProvider>
     </BrowserRouter>
   )
