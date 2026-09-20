@@ -94,7 +94,6 @@ async def analyze(vitals: VitalSigns):
         "stream": False,
         "format": RESPONSE_SCHEMA,
         "keep_alive": OLLAMA_KEEP_ALIVE,
-        "options": {"temperature": 0},
     }
 
     try:
