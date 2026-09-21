@@ -16,6 +16,7 @@ import { DiagnosticsProvider } from "./lib/context/diagnosticsContext"
 import { TelegramProvider } from "./lib/context/telegramContext"
 import BtTest from "./pages/BtTest"
 import { useBluetooth } from "./lib/bluetooth"
+import { ToastContainer } from 'react-toastify';
 
 export default function App() {
   const {
@@ -45,7 +46,6 @@ export default function App() {
             <Route path="/login" element={<Login btState={btState} />} />
             <Route path="/registro" element={<RegistroPaciente />} />
             <Route path="/confirmar" element={<Confirmar />} />
-
             <Route element={<RequireAuth />}>
               {/* Rutas de cliente */}
               <Route
@@ -100,6 +100,7 @@ export default function App() {
             </Route>
           </Route>
         </Routes>
+        <ToastContainer aria-label="Notificaciones" position="top-right" autoClose={4000}/>
       </TelegramProvider>
     </BrowserRouter>
   )
