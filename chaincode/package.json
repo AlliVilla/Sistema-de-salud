@@ -1,0 +1,18 @@
+{
+  "name": "registrocontract",
+  "version": "1.0.0",
+  "description": "Chaincode de registros medicos para Hyperledger Fabric",
+  "main": "index.js",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "fabric-chaincode-node start"
+  },
+  "engineStrict": true,
+  "license": "Apache-2.0",
+  "dependencies": {
+    "fabric-contract-api": "^2.5.4",
+    "fabric-shim": "^2.5.4"
+  }
+}

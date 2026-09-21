@@ -18,6 +18,19 @@ const reports = new mongoose.Schema({
         type: Number,
         required: [true, 'La oxigenacion es requerida.']
     },
+    is_aggregate: {
+        type: Boolean,
+        default: false
+    },
+    sample_count: {
+        type: Number,
+        default: 1
+    },
+    source_report_ids: {
+        type: [mongoose.Schema.ObjectId],
+        ref: "Report",
+        default: []
+    },
 },{
     timestamps: { createdAt: true, updatedAt: false }
 });

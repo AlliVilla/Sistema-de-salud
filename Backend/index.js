@@ -8,9 +8,12 @@ import { apiLimiter } from "./src/middlewares/rateLimit.middleware.js"
 import userRoutes from "./src/routes/users.route.js"
 import reportRoutes from "./src/routes/reports.route.js"
 import diagnosticRoutes from "./src/routes/diagnostics.route.js"
+import telegramRoutes from "./src/routes/telegram.route.js"
 import { version } from "mongoose";
 
 const app = express();
+
+app.set('trust proxy', 1) 
 
 app.use(cors());
 app.use(apiLimiter);
@@ -53,6 +56,7 @@ app.use("/api-docs", swaggerUI.serve, swaggerUI.setup(swaggerSpec))
 app.use('/user', userRoutes);
 app.use('/report', reportRoutes);
 app.use('/diagnostic', diagnosticRoutes);
+app.use('/telegram', telegramRoutes)
 
 app.use((req, res) => {
     res.status(404).json({ message: "Not found" });

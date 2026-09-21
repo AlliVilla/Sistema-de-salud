@@ -293,6 +293,14 @@
  *                 type: string
  *                 description: Condición médica del usuario.
  *                 example: Hipertensión
+ *               diagnosis_frequency:
+ *                 type: integer
+ *                 minimum: 1
+ *                 maximum: 100
+ *                 description: >
+ *                   Cada cuántos reportes se promedian los últimos N registros y se genera
+ *                   un diagnóstico automático.
+ *                 example: 10
  *     responses:
  *       200:
  *         description: Usuario actualizado correctamente.
@@ -311,15 +319,28 @@
 
 import usersController from "../controllers/users.controller.js";
 import authMiddleware from "../middlewares/auth.middleware.js";
+import { requireRole } from "../middlewares/role.middleware.js";
 import { loginLimiter, createAccountLimiter, confirmEmailLimiter } from "../middlewares/rateLimit.middleware.js";
 import express from "express";
 const router = express.Router();
 
-router.get('/', authMiddleware, usersController.getUsers);
+router.get('/', authMiddleware, requireRole('Admin'), usersController.getUsers);
 router.get('/me', authMiddleware, usersController.getMe);
 router.get('/confirm-email/:token', confirmEmailLimiter, usersController.confirmEmail);
+router.get("/telegram/link", authMiddleware, usersController.generateTelegramLink);
 router.post('/validate', loginLimiter, usersController.validateUser);
 router.post('/create', createAccountLimiter, usersController.createUser);
 router.patch('/update/:id', authMiddleware, usersController.editUser);
+
+// ─── Rutas de administración ───────────────────────────────────────────
+// Solo accesibles por usuarios con rol 'Admin'.
+// El administrador gestiona roles y estado de usuarios, pero NO puede
+// ver ni editar datos de salud (reportes, diagnósticos, etc.).
+
+router.get('/admin/list', authMiddleware, requireRole('Admin'), usersController.adminListUsers);
+router.get('/admin/:id', authMiddleware, requireRole('Admin'), usersController.adminGetUser);
+router.patch('/admin/:id/role', authMiddleware, requireRole('Admin'), usersController.adminUpdateRole);
+router.patch('/admin/:id/status', authMiddleware, requireRole('Admin'), usersController.adminUpdateStatus);
+router.delete('/admin/:id', authMiddleware, requireRole('Admin'), usersController.adminDeleteUser);
 
 export default router;

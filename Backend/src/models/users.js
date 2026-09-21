@@ -1,5 +1,4 @@
 import mongoose from "mongoose";
-import { ENUM } from "sequelize";
 
 const users = new mongoose.Schema({
     email: {
@@ -56,6 +55,24 @@ const users = new mongoose.Schema({
         type: String,
         enum: ['Admin', 'Client'],
         default: 'Client'
+    },
+    diagnosis_frequency: {
+        type: Number,
+        default: 10,
+        min: [1, 'La frecuencia de diagnóstico debe ser al menos 1.'],
+        max: [100, 'La frecuencia de diagnóstico no puede superar 100.']
+    },
+    reports_since_analysis: {
+        type: Number,
+        default: 0
+    },
+    telegramChatId: {
+        type: String,
+        default: null
+    },
+    telegramLinkToken: {
+        type: String,
+        default: null
     },
     emailConfirmation: {
         type: Boolean,

@@ -2,23 +2,31 @@ import { api } from "./client"
 import { ENDPOINTS } from "./endpoints"
 
 interface CreateReport {
-    heart_rate: number, 
-    temperature: number,
-    oxygenation: number
+  heart_rate: number, 
+  temperature: number,
+  oxygenation: number
 }
 
 interface Report {
-    id: string,
-    user_id: string,
-    heart_rate: number, 
-    temperature: number,
-    oxygenation: number
-    createdAt: string
+  id: string,
+  user_id: string,
+  heart_rate: number, 
+  temperature: number,
+  oxygenation: number
+  createdAt: string
+}
+
+export interface Diagnostic {
+  id: string
+  report_id: string
+  hash: string
+  description: string
 }
 
 interface ReportResponse {
-    message: string,
-    report: Report
+  message: string,
+  report: Report,
+  diagnostic: Diagnostic
 }
 
 export async function registerReport(payload: CreateReport): Promise<ReportResponse> {

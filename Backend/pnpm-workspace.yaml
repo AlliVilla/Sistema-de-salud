@@ -1,0 +1,5 @@
+allowBuilds:
+  '@scarf/scarf': true
+  ngrok: true
+  pkcs11js: true
+  protobufjs: true

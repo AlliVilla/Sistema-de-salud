@@ -1,4 +1,6 @@
 import Report from "../models/reports.js"
+import User from "../models/users.js"
+import analysisService from "../services/analysis.service.js"
 import { mapMongoError } from "../utils/errors.js"
 
 // Los reportes SIEMPRE pertenecen al usuario autenticado (req.user.id).
@@ -16,6 +18,27 @@ const createReport = async(req, res) => {
 
         const result = await newReport.save()
 
+        // Cada reporte real cuenta para el ciclo de análisis automático.
+        // Al alcanzar `diagnosis_frequency`, se promedian los últimos N
+        // reportes y se lanza el diagnóstico en segundo plano.
+        const user = await User.findOneAndUpdate(
+            { _id: req.user.id },
+            { $inc: { reports_since_analysis: 1 } },
+            { new: true, select: "diagnosis_frequency reports_since_analysis" }
+        )
+
+        let newDiagnostic
+        if (user) {
+            const frequency = user.diagnosis_frequency || 10
+            if (user.reports_since_analysis >= frequency) {
+                await User.updateOne(
+                    { _id: req.user.id },
+                    { $inc: { reports_since_analysis: -frequency } }
+                )
+                newDiagnostic = analysisService.runScheduledAnalysis(req.user.id, frequency)
+            }
+        }
+
         const sendReport = {
             id: result._id,
             user_id: result.user_id,
@@ -24,7 +47,7 @@ const createReport = async(req, res) => {
             oxygenation: result.oxygenation,
             createdAt: result.createdAt
         }
-        res.status(201).send({message: "Report created succesfully", report: sendReport});
+        res.status(201).send({message: "Report created succesfully", report: sendReport, diagnostic: newDiagnostic});
     }catch(error){
         console.error("ERROR CREATING REPORT:", error);
         const { status, message } = mapMongoError(error);
@@ -34,7 +57,7 @@ const createReport = async(req, res) => {
 
 const getReports = async(req, res) => {
     try{
-        const reports = await Report.find({ user_id: req.user.id })
+        const reports = await Report.find({ user_id: req.user.id, is_aggregate: { $ne: true } })
         if(reports.length === 0){
             return res.status(404).send({ message: "Reports not found", result: false })
         }
