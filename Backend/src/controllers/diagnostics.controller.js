@@ -75,7 +75,8 @@ const persistDiagnostic = async ({ report, user, hash, description }) => {
         id: saved._id,
         report_id: saved.report_id,
         hash: saved.hash,
-        description: saved.description
+        description: saved.description,
+        createdAt: saved.createdAt
     }
 
     try {

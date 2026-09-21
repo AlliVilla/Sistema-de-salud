@@ -31,9 +31,12 @@ export function DiagnosticsProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  const byDateDesc = (a: Diagnostic, b: Diagnostic) =>
+  new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime()
+
   const addDiagnostic = useCallback((d: Diagnostic) => {
     setDiagnostics((prev) =>
-      prev.some((x) => x.id === d.id) ? prev : [d, ...prev],
+      prev.some((x) => x.id === d.id) ? prev : [d, ...prev].sort(byDateDesc),
     )
   }, [])
 
@@ -49,7 +52,11 @@ export function DiagnosticsProvider({ children }: { children: ReactNode }) {
     try {
       const response = await getDiagnostics()
       const list = (response.diagnostics ?? []).map(normalizeDiagnostic)
-      setDiagnostics(list)
+      setDiagnostics((prev) => {
+        const ids = new Set(list.map((d) => d.id))
+        const local = prev.filter((d) => !ids.has(d.id))
+        return [...list, ...local.sort(byDateDesc)]
+      })
     } catch (err) {
       if (err instanceof ApiError && err.status === 404) {
         setDiagnostics([])
