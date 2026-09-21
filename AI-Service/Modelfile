@@ -1,6 +1,6 @@
 FROM qwen2.5:3b
 
-PARAMETER temperature 0.2
+PARAMETER temperature 0.5
 PARAMETER num_ctx 4096
 
 SYSTEM """
