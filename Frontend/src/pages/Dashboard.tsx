@@ -9,6 +9,7 @@ import TelegramNudge from "../components/telegram/TelegramNudge"
 import { toast } from "react-toastify"
 import { useNavigate } from "react-router-dom"
 import { useDiagnostics } from "@/lib/context/diagnosticsContext"
+import { normalizeDiagnostic } from "@/lib/api/diagnostics"
 
 const BLE_TABLE_ROWS = 15
 
@@ -31,7 +32,7 @@ export default function Dashboard({
   connectToDevice,
   scanNewDevice,
 }: DashboardProps) {
-  const { refresh } = useDiagnostics()
+  const { addDiagnostic } = useDiagnostics()
   const [modalOpen, setModalOpen] = useState(false)
   const [scanning, setScanning] = useState(false)
   const [connectingId, setConnectingId] = useState<string | null>(null)
@@ -125,7 +126,7 @@ export default function Dashboard({
           oxygenation: spo2,
         })
         if(response.diagnostic){
-          await refresh()
+        addDiagnostic(response.diagnostic)
           toast.error("¡Alerta! Se ha detectado una anomalía.")
           navigate("/alertas")
         }

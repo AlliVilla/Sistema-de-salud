@@ -27,7 +27,7 @@ const createReport = async(req, res) => {
             { new: true, select: "diagnosis_frequency reports_since_analysis" }
         )
 
-        let newDiagnostic
+        let newDiagnostic = null
         if (user) {
             const frequency = user.diagnosis_frequency || 10
             if (user.reports_since_analysis >= frequency) {
@@ -35,7 +35,8 @@ const createReport = async(req, res) => {
                     { _id: req.user.id },
                     { $inc: { reports_since_analysis: -frequency } }
                 )
-                newDiagnostic = analysisService.runScheduledAnalysis(req.user.id, frequency)
+                const analysis = await analysisService.runScheduledAnalysis(req.user.id, frequency)
+                newDiagnostic = analysis?.diagnostic ?? null
             }
         }
 
